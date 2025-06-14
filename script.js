@@ -12,49 +12,104 @@ const FirebaseProvider = ({ children }) => {
     const [userId, setUserId] = React.useState(null);
     const [isAuthReady, setIsAuthReady] = React.useState(false);
 
+    // Firebase初期化中のエラーを捕捉するための状態
+    const [firebaseInitError, setFirebaseInitError] = React.useState(null);
+
     React.useEffect(() => {
-        // Firebase initialization
+        console.log("FirebaseProvider useEffect: Initialization process started."); // 初期化開始ログ
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        let firebaseConfig = {};
+        try {
+            // __firebase_configが文字列で提供され、それが有効なJSONであるか確認
+            firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config !== '' 
+                             ? JSON.parse(__firebase_config) 
+                             : {};
+        } catch (e) {
+            console.error("Error parsing __firebase_config:", e);
+            setFirebaseInitError("Firebase configuration is invalid. Please check the provided config JSON.");
+            setIsAuthReady(true); // エラーがあっても認証準備完了状態にする（エラー表示のため）
+            setUserId(crypto.randomUUID()); // フォールバックID
+            return; // 初期化処理を中断
+        }
+
+        console.log("FirebaseProvider: appId =", appId);
+        console.log("FirebaseProvider: firebaseConfig =", firebaseConfig);
 
         try {
-            // firebaseコアライブラリはグローバルに利用可能
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.warn("Firebase config is empty. Firebase will not initialize properly.");
+                setFirebaseInitError("Firebase configuration is missing. Please provide a valid config.");
+                setIsAuthReady(true);
+                setUserId(crypto.randomUUID());
+                return;
+            }
+
             const app = firebase.initializeApp(firebaseConfig);
-            const firestoreDb = firebase.firestore(app); // compat版はfirebase.firestore()でアクセス
-            const firebaseAuth = firebase.auth(app); // compat版はfirebase.auth()でアクセス
+            // Firebase v9 compat API に合わせてサービスを取得
+            const firestoreDb = firebase.firestore(app); 
+            const firebaseAuth = firebase.auth(app);
 
             setDb(firestoreDb);
             setAuth(firebaseAuth);
 
-            // Monitor authentication state
+            console.log("Firebase initialized successfully. Awaiting authentication state."); // 初期化成功ログ
+
+            // 認証状態の監視
             const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+                console.log("onAuthStateChanged callback fired. User object:", user);
                 if (user) {
                     setUserId(user.uid);
+                    console.log("User authenticated:", user.uid);
                 } else {
-                    // Attempt anonymous authentication
+                    console.log("No user found. Attempting anonymous sign-in or custom token authentication.");
                     try {
                         const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                         if (token) {
                             await firebaseAuth.signInWithCustomToken(token);
+                            console.log("Signed in with custom token.");
                         } else {
                             await firebaseAuth.signInAnonymously();
+                            console.log("Signed in anonymously.");
                         }
-                        setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
+                        setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID()); // 認証後のUIDをセット
                     } catch (error) {
-                        console.error("Firebase Auth Error:", error);
-                        setUserId(crypto.randomUUID()); // Use random ID on auth failure
+                        console.error("Firebase Auth Error during sign-in:", error);
+                        setFirebaseInitError(`Firebase authentication failed: ${error.message}`);
+                        setUserId(crypto.randomUUID()); // 認証失敗時のフォールバックID
                     }
                 }
-                setIsAuthReady(true);
+                setIsAuthReady(true); // 認証処理が完了したらready状態に
+                console.log("Authentication process completed. isAuthReady set to true. Current userId:", userId);
             });
 
-            return () => unsubscribe();
+            // クリーンアップ関数
+            return () => {
+                console.log("Cleaning up Firebase auth state listener.");
+                unsubscribe();
+            };
         } catch (error) {
-            console.error("Failed to initialize Firebase:", error);
-            setIsAuthReady(true); // Set to ready state even on error
-            setUserId(crypto.randomUUID()); // Use random ID even on error
+            console.error("Critical error during Firebase initialization (outside auth listener):", error);
+            setFirebaseInitError(`Failed to initialize Firebase: ${error.message}`);
+            setIsAuthReady(true); // エラーがあっても認証準備完了状態にする
+            setUserId(crypto.randomUUID()); // フォールバックID
         }
-    }, []);
+    }, []); // 空の依存配列により、コンポーネントマウント時に一度だけ実行される
+
+    // Firebase Context Providerのレンダリング状態をログ出力
+    React.useEffect(() => {
+        console.log("FirebaseContext.Provider is rendering. Current states:", { db: !!db, auth: !!auth, userId, isAuthReady, firebaseInitError });
+    }, [db, auth, userId, isAuthReady, firebaseInitError]);
+
+    // 初期化エラーがある場合はエラーメッセージを表示
+    if (firebaseInitError) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-red-100 text-red-700 p-4 rounded-lg shadow-md">
+                <p>アプリケーションの初期化中にエラーが発生しました。</p>
+                <p>{firebaseInitError}</p>
+                <p>詳細はブラウザのデベロッパーツール（F12）のコンソールをご確認ください。</p>
+            </div>
+        );
+    }
 
     return (
         <FirebaseContext.Provider value={{ db, auth, userId, isAuthReady }}>
@@ -348,7 +403,7 @@ const HistoryModal = ({ isOpen, onClose, historyItems, allTabs, initialActiveTab
 
 // Main Application Component
 function App() {
-    const { db, userId, isAuthReady } = useFirebase();
+    const { db, userId, isAuthReady, firebaseInitError } = useFirebase();
 
     // Tab related States
     const [tabs, setTabs] = React.useState([]);
@@ -362,29 +417,37 @@ function App() {
 
     // Firestore listener for tabs
     React.useEffect(() => {
-        if (!db || !isAuthReady || !userId) return;
+        if (!db || !isAuthReady || !userId) {
+            console.log("Tabs listener skipped:", { db: !!db, isAuthReady, userId });
+            return;
+        }
 
-        // Firebase compat version uses .collection().onSnapshot() instead of collection() followed by onSnapshot(query())
+        console.log("Setting up tabs listener for userId:", userId);
         const tabsCollectionRef = db.collection(`artifacts/${userId}/public/data/tabs`);
         const unsubscribeTabs = tabsCollectionRef.onSnapshot((snapshot) => {
             const fetchedTabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Sort by position
             fetchedTabs.sort((a, b) => a.position - b.position);
             setTabs(fetchedTabs);
+            console.log("Tabs fetched:", fetchedTabs);
 
             // Activate the first tab on initial load or if no active tab
             if (!activeTabId && fetchedTabs.length > 0) {
                 setActiveTabId(fetchedTabs[0].id);
+                console.log("Setting activeTabId to first tab:", fetchedTabs[0].id);
             } else if (activeTabId && !fetchedTabs.some(tab => tab.id === activeTabId)) {
                 // If the active tab was deleted, switch to the first remaining tab
                 if (fetchedTabs.length > 0) {
                     setActiveTabId(fetchedTabs[0].id);
+                    console.log("Active tab deleted, switching to first remaining tab:", fetchedTabs[0].id);
                 } else {
                     setActiveTabId(null);
+                    console.log("All tabs deleted, activeTabId set to null.");
                 }
             }
         }, (error) => {
             console.error("Error fetching tabs:", error);
+            setFirebaseInitError(`Error fetching tabs: ${error.message}`); // エラーをFirebaseProvider経由で表示
         });
 
         const historyCollectionRef = db.collection(`artifacts/${userId}/public/data/historyItems`);
@@ -393,27 +456,30 @@ function App() {
             // Sort by date (newest first)
             fetchedHistory.sort((a, b) => new Date(b.checkedDate) - new Date(a.checkedDate));
             setHistoryItems(fetchedHistory);
+            console.log("History items fetched:", fetchedHistory.length);
         }, (error) => {
             console.error("Error fetching history items:", error);
+            setFirebaseInitError(`Error fetching history: ${error.message}`); // エラーをFirebaseProvider経由で表示
         });
 
         return () => {
+            console.log("Cleaning up tab and history listeners.");
             unsubscribeTabs();
             unsubscribeHistory();
         };
-    }, [db, userId, isAuthReady, activeTabId]);
+    }, [db, userId, isAuthReady, activeTabId, setFirebaseInitError]); // setFirebaseInitErrorを依存配列に追加
 
 
     // Firestore listener for input areas of the active tab
     React.useEffect(() => {
         if (!db || !isAuthReady || !activeTabId || !userId) {
             setInputAreas([]); // Clear if no active tab
+            console.log("Input areas listener skipped:", { db: !!db, isAuthReady, activeTabId, userId });
             return;
         }
 
+        console.log("Setting up input areas listener for tabId:", activeTabId);
         const inputAreasCollectionRef = db.collection(`artifacts/${userId}/public/data/inputAreas`);
-        // Query only input areas associated with the current active tab
-        // Use .where() on the collection reference directly for compat version
         const q = inputAreasCollectionRef.where("tabId", "==", activeTabId);
 
         const unsubscribeInputAreas = q.onSnapshot((snapshot) => {
@@ -421,31 +487,40 @@ function App() {
             // Sort by position
             fetchedInputAreas.sort((a, b) => a.position - b.position);
             setInputAreas(fetchedInputAreas);
+            console.log("Input areas fetched for active tab:", fetchedInputAreas.length);
         }, (error) => {
             console.error("Error fetching input areas:", error);
+            setFirebaseInitError(`Error fetching input areas: ${error.message}`); // エラーをFirebaseProvider経由で表示
         });
 
-        return () => unsubscribeInputAreas();
-    }, [db, userId, isAuthReady, activeTabId]);
+        return () => {
+            console.log("Cleaning up input areas listener.");
+            unsubscribeInputAreas();
+        };
+    }, [db, userId, isAuthReady, activeTabId, setFirebaseInitError]); // setFirebaseInitErrorを依存配列に追加
 
 
     // Add a tab
     const handleAddTab = async (name) => {
-        if (!db || !userId) return;
+        if (!db || !userId) {
+            console.error("Cannot add tab: DB or User ID not ready.");
+            return;
+        }
         try {
-            // Use .doc() without arguments to get a new document reference with an auto-generated ID
+            console.log("Adding new tab with name:", name);
             const newTabRef = db.collection(`artifacts/${userId}/public/data/tabs`).doc();
             const newPosition = tabs.length > 0 ? Math.max(...tabs.map(t => t.position)) + 1 : 0;
-            await newTabRef.set({ // Use .set() on the doc reference to set its data
+            await newTabRef.set({
                 name: name,
                 position: newPosition,
-                color: pastelColorMap[0].tabBg, // Default to the first pastel color
+                color: pastelColorMap[0].tabBg,
                 createdAt: new Date().toISOString()
             });
-            setActiveTabId(newTabRef.id); // Activate the new tab
-            console.log("Tab added with ID: ", newTabRef.id);
+            setActiveTabId(newTabRef.id);
+            console.log("Tab added with ID:", newTabRef.id);
         } catch (e) {
-            console.error("Error adding tab: ", e);
+            console.error("Error adding tab:", e);
+            setFirebaseInitError(`Error adding tab: ${e.message}`);
         }
     };
 
@@ -453,11 +528,12 @@ function App() {
     const handleUpdateTabColor = async (tabId, newColor) => {
         if (!db || !userId) return;
         try {
-            // Use .doc(tabId).update() on the collection reference
+            console.log("Updating tab color for ID:", tabId, "to color:", newColor);
             await db.collection(`artifacts/${userId}/public/data/tabs`).doc(tabId).update({ color: newColor });
-            console.log(`Tab ${tabId} color updated to ${newColor}.`);
+            console.log(`Tab ${tabId} color updated.`);
         } catch (e) {
-            console.error("Error updating tab color: ", e);
+            console.error("Error updating tab color:", e);
+            setFirebaseInitError(`Error updating tab color: ${e.message}`);
         }
     };
 
@@ -465,39 +541,46 @@ function App() {
     const handleDeleteTab = async (tabIdToDelete) => {
         if (!db || !userId) return;
         if (tabs.length === 1) {
-            console.warn("最後のタブは削除できません。");
+            console.warn("Cannot delete the last tab. At least one tab must remain.");
+            // ユーザーに警告を表示するモーダルなどを追加するべき
             return;
         }
         try {
+            console.log("Deleting tab and associated data for ID:", tabIdToDelete);
             // Delete all input areas for the tab being deleted
-            const q = db.collection(`artifacts/${userId}/public/data/inputAreas`).where("tabId", "==", tabIdToDelete);
-            const snapshot = await q.get();
-            snapshot.forEach(async (docToDelete) => {
+            const qInputAreas = db.collection(`artifacts/${userId}/public/data/inputAreas`).where("tabId", "==", tabIdToDelete);
+            const snapshotInputAreas = await qInputAreas.get();
+            snapshotInputAreas.forEach(async (docToDelete) => {
                 await docToDelete.ref.delete();
+                console.log("Deleted input area:", docToDelete.id);
             });
 
             // Delete history items for the tab being deleted
-            const historyQ = db.collection(`artifacts/${userId}/public/data/historyItems`).where("tabId", "==", tabIdToDelete);
-            const historySnapshot = await historyQ.get();
-            historySnapshot.forEach(async (docToDelete) => {
+            const qHistory = db.collection(`artifacts/${userId}/public/data/historyItems`).where("tabId", "==", tabIdToDelete);
+            const snapshotHistory = await qHistory.get();
+            snapshotHistory.forEach(async (docToDelete) => {
                 await docToDelete.ref.delete();
+                console.log("Deleted history item:", docToDelete.id);
             });
 
-            // Delete the tab document
+            // Delete the tab document itself
             await db.collection(`artifacts/${userId}/public/data/tabs`).doc(tabIdToDelete).delete();
-            console.log("Tab, its input areas, and history items deleted successfully.");
+            console.log("Tab deleted successfully:", tabIdToDelete);
 
             // If the deleted tab was active, switch to another tab
             if (activeTabId === tabIdToDelete) {
                 const remainingTabs = tabs.filter(tab => tab.id !== tabIdToDelete);
                 if (remainingTabs.length > 0) {
                     setActiveTabId(remainingTabs[0].id);
+                    console.log("Switched active tab to:", remainingTabs[0].id);
                 } else {
                     setActiveTabId(null);
+                    console.log("No tabs remaining, activeTabId set to null.");
                 }
             }
         } catch (e) {
-            console.error("Error deleting tab: ", e);
+            console.error("Error deleting tab:", e);
+            setFirebaseInitError(`Error deleting tab: ${e.message}`);
         }
     };
 
@@ -505,6 +588,7 @@ function App() {
     const handleMoveTab = async (fromIndex, toIndex) => {
         if (!db || !userId) return;
 
+        console.log(`Moving tab from index ${fromIndex} to ${toIndex}.`);
         const newTabs = [...tabs];
         const [movedTab] = newTabs.splice(fromIndex, 1);
         newTabs.splice(toIndex, 0, movedTab);
@@ -521,27 +605,33 @@ function App() {
             setTabs(newTabs); // Update UI
             console.log("Tabs reordered successfully.");
         } catch (e) {
-            console.error("Error reordering tabs: ", e);
+            console.error("Error reordering tabs:", e);
+            setFirebaseInitError(`Error reordering tabs: ${e.message}`);
         }
     };
 
 
     // Add an input area
     const handleAddInputArea = async () => {
-        if (!db || !activeTabId || !userId) return;
+        if (!db || !activeTabId || !userId) {
+            console.error("Cannot add input area: DB, active tab, or User ID not ready.");
+            return;
+        }
         try {
-            const newInputRef = db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(); // Use .doc() for new ID
+            console.log("Adding new input area for tab:", activeTabId);
+            const newInputRef = db.collection(`artifacts/${userId}/public/data/inputAreas`).doc();
             const newPosition = inputAreas.length > 0 ? Math.max(...inputAreas.map(item => item.position)) + 1 : 0;
-            await newInputRef.set({ // Use .set() on the doc reference
+            await newInputRef.set({
                 tabId: activeTabId,
                 text: '',
                 checked: false,
                 position: newPosition,
                 createdAt: new Date().toISOString()
             });
-            console.log("Input area added for tab: ", activeTabId);
+            console.log("Input area added with ID:", newInputRef.id);
         } catch (e) {
-            console.error("Error adding input area: ", e);
+            console.error("Error adding input area:", e);
+            setFirebaseInitError(`Error adding input area: ${e.message}`);
         }
     };
 
@@ -549,9 +639,11 @@ function App() {
     const handleUpdateInputAreaText = async (id, newText) => {
         if (!db || !userId) return;
         try {
+            // console.log("Updating input area text for ID:", id, "to:", newText); // 過剰なログを避けるためコメントアウト
             await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).update({ text: newText });
         } catch (e) {
-            console.error("Error updating input area text: ", e);
+            console.error("Error updating input area text:", e);
+            setFirebaseInitError(`Error updating input area: ${e.message}`);
         }
     };
 
@@ -559,7 +651,8 @@ function App() {
     const handleToggleCheck = async (id, currentText) => {
         if (!db || !userId) return;
         try {
-            // Use .add() on the collection reference to add a new document with an auto-generated ID
+            console.log("Toggling check/moving to history for input area ID:", id);
+            // Add to history
             await db.collection(`artifacts/${userId}/public/data/historyItems`).add({
                 originalInputAreaId: id,
                 tabId: activeTabId, // Record which tab it came from
@@ -568,9 +661,10 @@ function App() {
             });
             // Delete the original input area
             await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).delete();
-            console.log("Input area checked and moved to history.");
+            console.log("Input area checked and moved to history successfully.");
         } catch (e) {
-            console.error("Error toggling check/moving to history: ", e);
+            console.error("Error toggling check/moving to history:", e);
+            setFirebaseInitError(`Error moving item to history: ${e.message}`);
         }
     };
 
@@ -578,10 +672,12 @@ function App() {
     const handleDeleteInputArea = async (id) => {
         if (!db || !userId) return;
         try {
+            console.log("Deleting input area ID:", id);
             await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).delete();
-            console.log("Input area deleted.");
+            console.log("Input area deleted successfully.");
         } catch (e) {
-            console.error("Error deleting input area: ", e);
+            console.error("Error deleting input area:", e);
+            setFirebaseInitError(`Error deleting input area: ${e.message}`);
         }
     };
 
@@ -589,6 +685,19 @@ function App() {
     const activeTab = tabs.find(tab => tab.id === activeTabId);
     const mainBackgroundColor = activeTab ? pastelColorMap.find(c => c.tabBg === activeTab.color)?.mainBg || 'bg-gray-100' : 'bg-gray-100'; // Default light gray if no tab or color
 
+    // Firebase初期化エラーがある場合は即座に表示
+    if (firebaseInitError) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-red-100 text-red-700 p-4 rounded-lg shadow-md text-center">
+                <p className="font-bold text-xl mb-2">アプリケーションエラー</p>
+                <p className="text-lg mb-4">Firebaseの初期化またはデータ処理に問題が発生しました。</p>
+                <p className="text-sm font-mono break-all">{firebaseInitError}</p>
+                <p className="mt-4">詳細については、ブラウザのデベロッパーツール（F12キーで開く）の「Console」タブをご確認ください。</p>
+            </div>
+        );
+    }
+
+    // Firebase認証の準備ができていない場合は「読み込み中...」を表示
     if (!isAuthReady) {
         return (
             <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -725,8 +834,27 @@ function App() {
 // AppコンポーネントをFirebaseProviderでラップしてエクスポート
 document.addEventListener('DOMContentLoaded', () => {
     const rootElement = document.getElementById('root');
+    console.log("DOMContentLoaded: rootElement =", rootElement); // root要素の存在を確認
+
     if (rootElement) {
         const root = ReactDOM.createRoot(rootElement);
+
+        // --- デバッグ用テストレンダリング ---
+        // このブロックのコメントを外してデプロイし、GitHub Pagesでアクセスしてみてください。
+        // 緑色のボックスと「React is working!」のメッセージが表示されれば、
+        // Reactの基本レンダリングは機能しており、問題はFirebaseの初期化やAppコンポーネント内のロジックにある可能性が高いです。
+        /*
+        root.render(
+            <div style={{ padding: '20px', backgroundColor: '#d1fae5', borderRadius: '8px', textAlign: 'center' }}>
+                <h1 style={{ color: '#065f46', fontSize: '1.5rem', fontWeight: 'bold' }}>React is working!</h1>
+                <p style={{ color: '#10b981', marginTop: '8px' }}>If you see this, the issue is within Firebase or the main App component logic.</p>
+            </div>
+        );
+        */
+        // --- デバッグ用テストレンダリング終了 ---
+
+        // 通常のアプリケーションレンダリング
+        // 上記のテストレンダリングを有効にする場合は、このブロックをコメントアウトしてください。
         root.render(
             <React.StrictMode>
                 <FirebaseProvider>
@@ -734,7 +862,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </FirebaseProvider>
             </React.StrictMode>
         );
+        console.log("React app rendered into root element."); // Reactアプリがルートにレンダリングされたことをログ出力
     } else {
-        console.error("Root element with ID 'root' not found.");
+        console.error("Root element with ID 'root' not found. Please ensure index.html contains <div id='root'></div>.");
     }
 });
