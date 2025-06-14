@@ -1,6 +1,8 @@
 // script.js
-import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
+// ReactとReactDOMはHTMLでUMDビルドとして読み込まれるため、ここではimportしません。
+// import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
+// import ReactDOM from 'react-dom/client';
+
 // Updated Firebase CDN URLs to a more recent stable version (e.g., 11.6.1)
 // Corrected import paths to be plain URLs, not markdown links.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
@@ -8,16 +10,16 @@ import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged }
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
 // Firebase Context
-const FirebaseContext = createContext(null);
+const FirebaseContext = React.createContext(null); // Reactがグローバルスコープにあることを前提とする
 
 // Firebaseコンテキストプロバイダー
 const FirebaseProvider = ({ children }) => {
-    const [db, setDb] = useState(null);
-    const [auth, setAuth] = useState(null);
-    const [userId, setUserId] = useState(null);
-    const [isAuthReady, setIsAuthReady] = useState(false);
+    const [db, setDb] = React.useState(null);
+    const [auth, setAuth] = React.useState(null);
+    const [userId, setUserId] = React.useState(null);
+    const [isAuthReady, setIsAuthReady] = React.useState(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         // Firebase initialization
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
@@ -69,7 +71,7 @@ const FirebaseProvider = ({ children }) => {
 
 // Hook for using Firebase in components
 const useFirebase = () => {
-    return useContext(FirebaseContext);
+    return React.useContext(FirebaseContext);
 };
 
 // Generic Modal Component
@@ -105,10 +107,10 @@ const pastelColorMap = [
 
 // Tab Settings Modal Component
 const TabSettingsModal = ({ isOpen, onClose, tabs, onAddTab, onDeleteTab, onMoveTab, onUpdateTabColor }) => {
-    const [newTabName, setNewTabName] = useState('');
-    const [draggingIndex, setDraggingIndex] = useState(null);
-    const dragItem = useRef(null);
-    const dragOverItem = useRef(null);
+    const [newTabName, setNewTabName] = React.useState('');
+    const [draggingIndex, setDraggingIndex] = React.useState(null);
+    const dragItem = React.useRef(null);
+    const dragOverItem = React.useRef(null);
 
     // List of predefined Tailwind colors for selection (using pastelColorMap)
     const colors = pastelColorMap; // Use the new pastelColorMap
@@ -250,10 +252,10 @@ const normalizeJapaneseTextForMerging = (str) => {
 // History Modal Component
 const HistoryModal = ({ isOpen, onClose, historyItems, allTabs, initialActiveTabId }) => {
     // State to hold the ID of the selected tab
-    const [selectedTabId, setSelectedTabId] = useState(initialActiveTabId);
+    const [selectedTabId, setSelectedTabId] = React.useState(initialActiveTabId);
 
     // Set initial active tab ID when modal opens
-    useEffect(() => {
+    React.useEffect(() => {
         setSelectedTabId(initialActiveTabId);
     }, [initialActiveTabId, isOpen]);
 
@@ -355,17 +357,17 @@ function App() {
     const { db, userId, isAuthReady } = useFirebase();
 
     // Tab related States
-    const [tabs, setTabs] = useState([]);
-    const [activeTabId, setActiveTabId] = useState(null); // ID of the currently active tab
-    const [tabSettingsModalOpen, setTabSettingsModalOpen] = useState(false);
+    const [tabs, setTabs] = React.useState([]);
+    const [activeTabId, setActiveTabId] = React.useState(null); // ID of the currently active tab
+    const [tabSettingsModalOpen, setTabSettingsModalOpen] = React.useState(false);
 
     // Input area related States
-    const [inputAreas, setInputAreas] = useState([]); // Input areas for the current active tab
-    const [historyItems, setHistoryItems] = useState([]); // History of completed items
-    const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [inputAreas, setInputAreas] = React.useState([]); // Input areas for the current active tab
+    const [historyItems, setHistoryItems] = React.useState([]); // History of completed items
+    const [historyModalOpen, setHistoryModalOpen] = React.useState(false);
 
     // Firestore listener for tabs
-    useEffect(() => {
+    React.useEffect(() => {
         if (!db || !isAuthReady || !userId) return;
 
         const tabsCollectionRef = collection(db, `artifacts/${userId}/public/data/tabs`);
@@ -408,7 +410,7 @@ function App() {
 
 
     // Firestore listener for input areas of the active tab
-    useEffect(() => {
+    React.useEffect(() => {
         if (!db || !isAuthReady || !activeTabId || !userId) {
             setInputAreas([]); // Clear if no active tab
             return;
