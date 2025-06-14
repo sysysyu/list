@@ -128,7 +128,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity50 flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">{title}</h3>
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
@@ -557,8 +557,8 @@ function App() {
 
             // Delete history items for the tab being deleted
             const qHistory = db.collection(`artifacts/${userId}/public/data/historyItems`).where("tabId", "==", tabIdToDelete);
-            const snapshotHistory = await qHistory.get();
-            snapshotHistory.forEach(async (docToDelete) => {
+            const historySnapshot = await qHistory.get();
+            historySnapshot.forEach(async (docToDelete) => {
                 await docToDelete.ref.delete();
                 console.log("Deleted history item:", docToDelete.id);
             });
