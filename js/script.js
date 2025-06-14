@@ -596,22 +596,22 @@ function App() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col font-inter"> {/* Removed bg-gray-100 here */}
+        <div className="min-h-screen flex flex-col font-inter">
             {/* ヘッダー */}
             <header className="bg-white shadow-md flex flex-col sticky top-0 z-10">
                 {/* 上部コントロールバー（右側にアイコン群） */}
-                <div className="flex items-center p-4 justify-end"> {/* justify-endで右寄せ */}
+                <div className="flex items-center p-4 justify-end">
                     {/* 右側のアイコン群 */}
                     <div className="flex space-x-2">
                         <button
-                            onClick={() => setHistoryModalOpen(true)} // 履歴アイコンを左に
+                            onClick={() => setHistoryModalOpen(true)}
                             className="p-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition duration-200 shadow-sm"
                             aria-label="履歴一覧"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         </button>
                         <button
-                            onClick={() => setTabSettingsModalOpen(true)} // 歯車アイコンを右に
+                            onClick={() => setTabSettingsModalOpen(true)}
                             className="p-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition duration-200 shadow-sm"
                             aria-label="タブ設定"
                         >
@@ -645,7 +645,7 @@ function App() {
             </header>
 
             {/* メインコンテンツエリア */}
-            <main className={`flex-grow p-4 overflow-y-auto relative ${mainBackgroundColor}`}> {/* 動的に背景色を適用 */}
+            <main className={`flex-grow p-4 overflow-y-auto relative ${mainBackgroundColor}`}>
                 <div className="max-w-xl mx-auto space-y-4">
                     {inputAreas.length === 0 && (
                         <p className="text-center text-gray-500 text-lg mt-10">
@@ -677,7 +677,7 @@ function App() {
                         </div>
                     ))}
                     {activeTabId && (
-                        <div className="fixed bottom-4 right-8 z-20"> {/* right-8に変更 */}
+                        <div className="fixed bottom-4 right-8 z-20">
                             <button
                                 onClick={handleAddInputArea}
                                 className="p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
