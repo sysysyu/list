@@ -128,7 +128,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity50 flex justify-center items-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">{title}</h3>
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
@@ -365,7 +365,7 @@ const HistoryModal = ({ isOpen, onClose, historyItems, allTabs, initialActiveTab
                     value={selectedTabId || ''} // Allow empty string for "All History"
                     onChange={(e) => setSelectedTabId(e.target.value)}
                 >
-                    <option value="">全ての履歴</option> {/* Option to display all history */}
+                    <option value="">全ての履歴</option> /* Option to display all history */
                     {allTabs.map(tab => (
                         <option key={tab.id} value={tab.id}>{tab.name}</option>
                     ))}
@@ -843,18 +843,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // このブロックのコメントを外してデプロイし、GitHub Pagesでアクセスしてみてください。
         // 緑色のボックスと「React is working!」のメッセージが表示されれば、
         // Reactの基本レンダリングは機能しており、問題はFirebaseの初期化やAppコンポーネント内のロジックにある可能性が高いです。
-        /*
+        
         root.render(
             <div style={{ padding: '20px', backgroundColor: '#d1fae5', borderRadius: '8px', textAlign: 'center' }}>
                 <h1 style={{ color: '#065f46', fontSize: '1.5rem', fontWeight: 'bold' }}>React is working!</h1>
                 <p style={{ color: '#10b981', marginTop: '8px' }}>If you see this, the issue is within Firebase or the main App component logic.</p>
             </div>
         );
-        */
+        
         // --- デバッグ用テストレンダリング終了 ---
 
         // 通常のアプリケーションレンダリング
         // 上記のテストレンダリングを有効にする場合は、このブロックをコメントアウトしてください。
+        /*
         root.render(
             <React.StrictMode>
                 <FirebaseProvider>
@@ -862,6 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </FirebaseProvider>
             </React.StrictMode>
         );
+        */
         console.log("React app rendered into root element."); // Reactアプリがルートにレンダリングされたことをログ出力
     } else {
         console.error("Root element with ID 'root' not found. Please ensure index.html contains <div id='root'></div>.");
