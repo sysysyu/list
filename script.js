@@ -1,16 +1,9 @@
 // script.js
 // ReactとReactDOMはHTMLでUMDビルドとして読み込まれるため、ここではimportしません。
-// import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
-// import ReactDOM from 'react-dom/client';
-
-// Updated Firebase CDN URLs to a more recent stable version (e.g., 11.6.1)
-// Corrected import paths to be plain URLs, not markdown links.
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+// FirebaseもHTMLでUMDビルドとして読み込まれるため、ここではimportしません。
 
 // Firebase Context
-const FirebaseContext = React.createContext(null); // Reactがグローバルスコープにあることを前提とする
+const FirebaseContext = React.createContext(null);
 
 // Firebaseコンテキストプロバイダー
 const FirebaseProvider = ({ children }) => {
@@ -25,15 +18,16 @@ const FirebaseProvider = ({ children }) => {
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
         try {
-            const app = initializeApp(firebaseConfig);
-            const firestoreDb = getFirestore(app);
-            const firebaseAuth = getAuth(app);
+            // firebaseコアライブラリはグローバルに利用可能
+            const app = firebase.initializeApp(firebaseConfig);
+            const firestoreDb = firebase.firestore(app); // compat版はfirebase.firestore()でアクセス
+            const firebaseAuth = firebase.auth(app); // compat版はfirebase.auth()でアクセス
 
             setDb(firestoreDb);
             setAuth(firebaseAuth);
 
             // Monitor authentication state
-            const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+            const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
                 if (user) {
                     setUserId(user.uid);
                 } else {
@@ -41,9 +35,9 @@ const FirebaseProvider = ({ children }) => {
                     try {
                         const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                         if (token) {
-                            await signInWithCustomToken(firebaseAuth, token);
+                            await firebaseAuth.signInWithCustomToken(token);
                         } else {
-                            await signInAnonymously(firebaseAuth);
+                            await firebaseAuth.signInAnonymously();
                         }
                         setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID());
                     } catch (error) {
@@ -370,8 +364,9 @@ function App() {
     React.useEffect(() => {
         if (!db || !isAuthReady || !userId) return;
 
-        const tabsCollectionRef = collection(db, `artifacts/${userId}/public/data/tabs`);
-        const unsubscribeTabs = onSnapshot(query(tabsCollectionRef), (snapshot) => {
+        // Firebase compat version uses .collection().onSnapshot() instead of collection() followed by onSnapshot(query())
+        const tabsCollectionRef = db.collection(`artifacts/${userId}/public/data/tabs`);
+        const unsubscribeTabs = tabsCollectionRef.onSnapshot((snapshot) => {
             const fetchedTabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Sort by position
             fetchedTabs.sort((a, b) => a.position - b.position);
@@ -392,8 +387,8 @@ function App() {
             console.error("Error fetching tabs:", error);
         });
 
-        const historyCollectionRef = collection(db, `artifacts/${userId}/public/data/historyItems`);
-        const unsubscribeHistory = onSnapshot(query(historyCollectionRef), (snapshot) => {
+        const historyCollectionRef = db.collection(`artifacts/${userId}/public/data/historyItems`);
+        const unsubscribeHistory = historyCollectionRef.onSnapshot((snapshot) => {
             const fetchedHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Sort by date (newest first)
             fetchedHistory.sort((a, b) => new Date(b.checkedDate) - new Date(a.checkedDate));
@@ -416,11 +411,12 @@ function App() {
             return;
         }
 
-        const inputAreasCollectionRef = collection(db, `artifacts/${userId}/public/data/inputAreas`);
+        const inputAreasCollectionRef = db.collection(`artifacts/${userId}/public/data/inputAreas`);
         // Query only input areas associated with the current active tab
-        const q = query(inputAreasCollectionRef, where("tabId", "==", activeTabId));
+        // Use .where() on the collection reference directly for compat version
+        const q = inputAreasCollectionRef.where("tabId", "==", activeTabId);
 
-        const unsubscribeInputAreas = onSnapshot(q, (snapshot) => {
+        const unsubscribeInputAreas = q.onSnapshot((snapshot) => {
             const fetchedInputAreas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Sort by position
             fetchedInputAreas.sort((a, b) => a.position - b.position);
@@ -437,9 +433,10 @@ function App() {
     const handleAddTab = async (name) => {
         if (!db || !userId) return;
         try {
-            const newTabRef = doc(collection(db, `artifacts/${userId}/public/data/tabs`));
+            // Use .doc() without arguments to get a new document reference with an auto-generated ID
+            const newTabRef = db.collection(`artifacts/${userId}/public/data/tabs`).doc();
             const newPosition = tabs.length > 0 ? Math.max(...tabs.map(t => t.position)) + 1 : 0;
-            await setDoc(newTabRef, {
+            await newTabRef.set({ // Use .set() on the doc reference to set its data
                 name: name,
                 position: newPosition,
                 color: pastelColorMap[0].tabBg, // Default to the first pastel color
@@ -456,7 +453,8 @@ function App() {
     const handleUpdateTabColor = async (tabId, newColor) => {
         if (!db || !userId) return;
         try {
-            await updateDoc(doc(db, `artifacts/${userId}/public/data/tabs`, tabId), { color: newColor });
+            // Use .doc(tabId).update() on the collection reference
+            await db.collection(`artifacts/${userId}/public/data/tabs`).doc(tabId).update({ color: newColor });
             console.log(`Tab ${tabId} color updated to ${newColor}.`);
         } catch (e) {
             console.error("Error updating tab color: ", e);
@@ -472,21 +470,21 @@ function App() {
         }
         try {
             // Delete all input areas for the tab being deleted
-            const q = query(collection(db, `artifacts/${userId}/public/data/inputAreas`), where("tabId", "==", tabIdToDelete));
-            const snapshot = await getDocs(q);
+            const q = db.collection(`artifacts/${userId}/public/data/inputAreas`).where("tabId", "==", tabIdToDelete);
+            const snapshot = await q.get();
             snapshot.forEach(async (docToDelete) => {
-                await deleteDoc(doc(db, `artifacts/${userId}/public/data/inputAreas`, docToDelete.id));
+                await docToDelete.ref.delete();
             });
 
             // Delete history items for the tab being deleted
-            const historyQ = query(collection(db, `artifacts/${userId}/public/data/historyItems`), where("tabId", "==", tabIdToDelete));
-            const historySnapshot = await getDocs(historyQ);
+            const historyQ = db.collection(`artifacts/${userId}/public/data/historyItems`).where("tabId", "==", tabIdToDelete);
+            const historySnapshot = await historyQ.get();
             historySnapshot.forEach(async (docToDelete) => {
-                await deleteDoc(doc(db, `artifacts/${userId}/public/data/historyItems`, docToDelete.id));
+                await docToDelete.ref.delete();
             });
 
-
-            await deleteDoc(doc(db, `artifacts/${userId}/public/data/tabs`, tabIdToDelete));
+            // Delete the tab document
+            await db.collection(`artifacts/${userId}/public/data/tabs`).doc(tabIdToDelete).delete();
             console.log("Tab, its input areas, and history items deleted successfully.");
 
             // If the deleted tab was active, switch to another tab
@@ -514,7 +512,7 @@ function App() {
         // Calculate new positions and update Firestore
         const batch = db.batch();
         newTabs.forEach((tab, index) => {
-            const tabRef = doc(db, `artifacts/${userId}/public/data/tabs`, tab.id);
+            const tabRef = db.collection(`artifacts/${userId}/public/data/tabs`).doc(tab.id);
             batch.update(tabRef, { position: index });
         });
 
@@ -532,9 +530,9 @@ function App() {
     const handleAddInputArea = async () => {
         if (!db || !activeTabId || !userId) return;
         try {
-            const newInputRef = doc(collection(db, `artifacts/${userId}/public/data/inputAreas`));
+            const newInputRef = db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(); // Use .doc() for new ID
             const newPosition = inputAreas.length > 0 ? Math.max(...inputAreas.map(item => item.position)) + 1 : 0;
-            await setDoc(newInputRef, {
+            await newInputRef.set({ // Use .set() on the doc reference
                 tabId: activeTabId,
                 text: '',
                 checked: false,
@@ -551,7 +549,7 @@ function App() {
     const handleUpdateInputAreaText = async (id, newText) => {
         if (!db || !userId) return;
         try {
-            await updateDoc(doc(db, `artifacts/${userId}/public/data/inputAreas`, id), { text: newText });
+            await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).update({ text: newText });
         } catch (e) {
             console.error("Error updating input area text: ", e);
         }
@@ -561,15 +559,15 @@ function App() {
     const handleToggleCheck = async (id, currentText) => {
         if (!db || !userId) return;
         try {
-            // Add to history
-            await addDoc(collection(db, `artifacts/${userId}/public/data/historyItems`), {
+            // Use .add() on the collection reference to add a new document with an auto-generated ID
+            await db.collection(`artifacts/${userId}/public/data/historyItems`).add({
                 originalInputAreaId: id,
                 tabId: activeTabId, // Record which tab it came from
                 text: currentText,
                 checkedDate: new Date().toISOString(),
             });
             // Delete the original input area
-            await deleteDoc(doc(db, `artifacts/${userId}/public/data/inputAreas`, id));
+            await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).delete();
             console.log("Input area checked and moved to history.");
         } catch (e) {
             console.error("Error toggling check/moving to history: ", e);
@@ -580,7 +578,7 @@ function App() {
     const handleDeleteInputArea = async (id) => {
         if (!db || !userId) return;
         try {
-            await deleteDoc(doc(db, `artifacts/${userId}/public/data/inputAreas`, id));
+            await db.collection(`artifacts/${userId}/public/data/inputAreas`).doc(id).delete();
             console.log("Input area deleted.");
         } catch (e) {
             console.error("Error deleting input area: ", e);
