@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'パウダー': ['パウダー', 'ぱうだー'],
         'チーク': ['チーク', 'ちーく'],
         'アイシャドウ': ['アイシャドウ', 'あいしゃどう'],
-        'アイライナー': ['あいらいなー'],
+        'アイライナー': ['アイライナー', 'あいらいなー'],
         'マスカラ': ['マスカラ', 'ますから'],
         'リップ': ['リップ', 'りっぷ'],
         '口紅': ['口紅', 'くちべに'],
@@ -313,6 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'ネイル': ['ネイル', 'ねいる'],
         '除光液': ['除光液', 'じょこうえき'],
     });
+
+    // Prevent zoom on button taps: Add touch-action to body and overflow-x hidden
+    document.body.style.touchAction = 'manipulation';
+    document.body.style.overflowX = 'hidden'; // Ensure no horizontal scroll for tab transitions
 
     const tabContainer = document.getElementById('tabContainer');
     const tabContentWrapper = document.getElementById('tabContentWrapper');
@@ -510,11 +514,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderTabContents = () => {
         tabContentWrapper.innerHTML = '';
+        // Set tabContentWrapper to be a flex container and span across all tab contents
+        tabContentWrapper.style.display = 'flex';
+        tabContentWrapper.style.width = `${tabs.length * 100}%`; // Each tab is 100% of the viewport width effectively
+        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Ensure smooth transition
+
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
+            // Each tabContentDiv now takes 100% width of the visible area
             tabContentDiv.className = 'tab-content py-4 px-0 space-y-4 overflow-y-auto'; 
-            
+            tabContentDiv.style.width = `${100 / tabs.length}%`; // Distribute width evenly within the flex container
+            tabContentDiv.style.flexShrink = '0'; // Prevent shrinking
+
             if (!items[tab.id]) {
                 items[tab.id] = [];
             }
@@ -566,9 +578,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTabContentDisplay = () => {
         const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
         if (activeTabIndex !== -1) {
-            tabContentWrapper.style.transform = `translateX(-${activeTabIndex * 100}%)`;
+            // Calculate translation based on 100% of the tabContentWrapper's width per tab
+            tabContentWrapper.style.transform = `translateX(-${activeTabIndex * (100 / tabs.length)}%)`;
             const activeContentDiv = document.getElementById(`tab-content-${activeTabId}`);
             if (activeContentDiv) {
+                // Adjust wrapper height to active tab content height
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
             }
         }
@@ -592,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (categoryAIndex !== categoryBIndex) {
                     return categoryAIndex - categoryBIndex;
                 }
-                // カテゴリが同じ場合はテキストでソート
+                // カテゴリが同じ場合はテキストでソート (オプション)
                 return (a.text || '').localeCompare(b.text || '');
             });
         }
@@ -964,27 +978,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     addTabBtn.onclick = () => {
-        const newItem = {
-            id: Date.now().toString(),
-            text: '',
-            checked: false,
-            category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
-            itemColor: duskyColors['オフホワイト'] // 新しいアイテムにデフォルト色を設定
-        };
-        if (!items[activeTabId]) {
-            items[activeTabId] = [];
+        const newTabName = newTabNameInput.value.trim();
+        if (newTabName) {
+            const newTab = { id: Date.now().toString(), name: newTabName, tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor };
+            tabs.push(newTab);
+            items[newTab.id] = [];
+            saveTabs();
+            saveItems();
+            newTabNameInput.value = '';
+            renderTabs();
+            renderTabContents();
+            renderTabSettings();
+            switchTab(newTab.id);
         }
-        items[activeTabId].push(newItem);
-        sortCurrentTabItems(); // 新規追加後もソート
-        saveItems();
-        renderTabContents();
-        updateTabContentDisplay();
-        setTimeout(() => {
-            const newItemElement = document.getElementById(`item-${newItem.id}`);
-            if (newItemElement) {
-                newItemElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }
-        }, 100);
     };
 
     const deleteTab = (id) => {
