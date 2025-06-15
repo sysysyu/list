@@ -175,11 +175,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (itemCategory !== lastCategory) {
                     const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
                     if (categoryItemsExist) {
-                        const categorySubtitle = document.createElement('h4');
+                        const categorySubtitleContainer = document.createElement('h4');
                         // サブタイトルにTailwindクラスを適用
-                        categorySubtitle.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4'; // 上マージンを増やして区切りを明確に
-                        categorySubtitle.textContent = itemCategory;
-                        tabContentDiv.appendChild(categorySubtitle);
+                        categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2'; // アイコンとテキストを並べるためにflex
+                        
+                        // カテゴリサブタイトルアイコン
+                        const subtitleIcon = document.createElement('i');
+                        const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
+                        subtitleIcon.className = `${iconClass} text-xl`; // アイコンの色はcategoryIconsで定義
+                        
+                        const subtitleText = document.createElement('span');
+                        subtitleText.textContent = itemCategory;
+
+                        categorySubtitleContainer.appendChild(subtitleIcon);
+                        categorySubtitleContainer.appendChild(subtitleText);
+                        tabContentDiv.appendChild(categorySubtitleContainer);
                         lastCategory = itemCategory;
                     }
                 }
@@ -243,15 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
-        // カテゴリアイコン
-        const categoryIcon = document.createElement('i');
-        const iconClass = categoryIcons[itemData.category || '未分類'];
-        if (iconClass) {
-            categoryIcon.className = `${iconClass} text-xl w-6 text-center`; // アイコンの色はcategoryIconsで定義
-        } else {
-            categoryIcon.className = `fas fa-question-circle text-gray-400 text-xl w-6 text-center`; // Fallback
-        }
-        categoryIcon.style.minWidth = '24px'; // アイコンの幅を固定してレイアウトの崩れを防ぐ
+        // カテゴリアイコン（入力エリア横からは削除）
+        // const categoryIcon = document.createElement('i');
+        // const iconClass = categoryIcons[itemData.category || '未分類'];
+        // if (iconClass) {
+        //     categoryIcon.className = `${iconClass} text-xl w-6 text-center`;
+        // } else {
+        //     categoryIcon.className = `fas fa-question-circle text-gray-400 text-xl w-6 text-center`;
+        // }
+        // categoryIcon.style.minWidth = '24px';
 
         // 入力フィールド
         const input = document.createElement('input');
@@ -260,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.placeholder = 'ここにタスクを入力';
         input.setAttribute('tabindex', '0'); 
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
-        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect, categoryIcon); // categorySelectとcategoryIconを渡す
+        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect); // categoryIconを渡さない
         // フォーカスアウト時にソートと再レンダリングを実行
         input.onblur = () => {
             sortCurrentTabItems();
@@ -288,9 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
-        // 要素の追加順序: チェックボックス、カテゴリアイコン、入力エリア、プルダウン、ゴミ箱アイコン
+        // 要素の追加順序: チェックボックス、入力エリア、プルダウン、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
-        itemDiv.appendChild(categoryIcon); // 新しい位置
+        // itemDiv.appendChild(categoryIcon); // カテゴリアイコンを削除
         itemDiv.appendChild(input);
         itemDiv.appendChild(categorySelect); // 新しい位置
         itemDiv.appendChild(deleteButton);
@@ -324,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 入力エリアのテキストを更新
-    const updateItemText = (id, newText, categorySelectElement, categoryIconElement) => { // categoryIconElementも受け取る
+    const updateItemText = (id, newText, categorySelectElement) => { // categoryIconElementを削除
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
@@ -359,11 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (categorySelectElement) { // プルダウン要素があれば更新
                         categorySelectElement.value = foundCategory;
                     }
-                    if (categoryIconElement) { // アイコン要素があれば更新
-                        const iconClass = categoryIcons[foundCategory] || categoryIcons['未分類'];
-                        categoryIconElement.className = `${iconClass} text-xl w-6 text-center`;
-                    }
-                    // ここではソートと再レンダリングは行わない（onblurに任せる）
+                    // カテゴリアイコンの更新はサブタイトルに移動したのでここからは削除
                 }
             }
             saveItems(); // テキストとカテゴリの変更を保存
