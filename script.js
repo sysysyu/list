@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContentWrapper = document.getElementById('tabContentWrapper');
     const addInputAreaBtn = document.getElementById('addInputAreaBtn');
     const tabSettingsBtn = document.getElementById('tabSettingsBtn');
-    const historyListBtn = document.getElementById('historyListBtn');
+    const historyListBtn = document = document.getElementById('historyListBtn');
     const tabSettingsModal = document.getElementById('tabSettingsModal');
     const closeTabSettingsModalBtn = document.getElementById('closeTabSettingsModalBtn');
     const tabsList = document.getElementById('tabsList');
@@ -36,6 +36,32 @@ document.addEventListener('DOMContentLoaded', () => {
         items[activeTabId] = [];
     }
 
+    // データ保存ヘルパー関数を早期に定義
+    const saveTabs = () => localStorage.setItem('tabs', JSON.stringify(tabs));
+    const saveItems = () => localStorage.setItem('items', JSON.stringify(items));
+    const saveHistory = () => localStorage.setItem('history', JSON.stringify(history));
+    const saveActiveTab = () => localStorage.setItem('activeTabId', activeTabId);
+
+    // プルダウンのカテゴリリスト
+    const categories = [
+        '未分類', // デフォルトまたは選択なし
+        '飲料・お酒',
+        'お菓子',
+        '米・パン・種類',
+        '野菜',
+        '海鮮',
+        '肉・肉加工品',
+        '卵・チーズ・乳製品',
+        '果物',
+        '冷凍食品',
+        '豆腐・納豆',
+        '缶詰・瓶詰め',
+        '調味料',
+        '日用品',
+        '医薬品',
+        'その他'
+    ];
+
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
         if (items[tabId]) {
@@ -51,11 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     saveItems(); // ソートされた状態を保存
-
-    const saveTabs = () => localStorage.setItem('tabs', JSON.stringify(tabs));
-    const saveItems = () => localStorage.setItem('items', JSON.stringify(items));
-    const saveHistory = () => localStorage.setItem('history', JSON.stringify(history));
-    const saveActiveTab = () => localStorage.setItem('activeTabId', activeTabId);
 
     const showModal = (modalElement) => {
         modalElement.classList.remove('hidden');
@@ -133,26 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTabContents();
         updateTabContentDisplay();
     };
-
-    // プルダウンのカテゴリリスト
-    const categories = [
-        '未分類', // デフォルトまたは選択なし
-        '飲料・お酒',
-        'お菓子',
-        '米・パン・種類',
-        '野菜',
-        '海鮮',
-        '肉・肉加工品',
-        '卵・チーズ・乳製品',
-        '果物',
-        '冷凍食品',
-        '豆腐・納豆',
-        '缶詰・瓶詰め',
-        '調味料',
-        '日用品',
-        '医薬品',
-        'その他'
-    ];
 
     // 現在アクティブなタブのアイテムをカテゴリでソートする関数
     const sortCurrentTabItems = () => {
