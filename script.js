@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
     // タブとリストの背景色はCSSで固定されるため、JSのデフォルト色設定を削除または固定値に
-    // 初期タブの色は白、リストアイテムの背景色も白に固定
     const initialDefaultTabColor = '#ffffff'; // 白
     const initialDefaultListColor = '#ffffff'; // リストアイテムの背景色（白に固定）
 
@@ -30,13 +29,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
-    // itemDataにcategoryプロパティを追加するため、デフォルト値を更新
     let items = JSON.parse(localStorage.getItem('items')) || {};
     let history = JSON.parse(localStorage.getItem('history')) || [];
 
     if (!items[activeTabId]) {
         items[activeTabId] = [];
     }
+
+    // アプリケーション起動時に全てのタブのアイテムをソートしておく
+    Object.keys(items).forEach(tabId => {
+        if (items[tabId]) {
+            items[tabId].sort((a, b) => {
+                const categoryAIndex = categories.indexOf(a.category || '未分類');
+                const categoryBIndex = categories.indexOf(b.category || '未分類');
+                if (categoryAIndex !== categoryBIndex) {
+                    return categoryAIndex - categoryBIndex;
+                }
+                // カテゴリが同じ場合はテキストでソート (オプション)
+                return (a.text || '').localeCompare(b.text || '');
+            });
+        }
+    });
+    saveItems(); // ソートされた状態を保存
 
     const saveTabs = () => localStorage.setItem('tabs', JSON.stringify(tabs));
     const saveItems = () => localStorage.setItem('items', JSON.stringify(items));
@@ -85,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            tabContentDiv.className = 'tab-content p-4 pt-0 space-y-4 overflow-y-auto';
+            // リストの表示を画面いっぱいに広げるため、px-0を適用
+            tabContentDiv.className = 'tab-content py-4 px-0 space-y-4 overflow-y-auto'; 
             
             if (!items[tab.id]) {
                 items[tab.id] = [];
@@ -114,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeTabId = id;
         saveActiveTab();
         renderTabs();
+        sortCurrentTabItems(); // タブ切り替え時にアイテムをソート
         renderTabContents();
         updateTabContentDisplay();
     };
@@ -138,10 +154,26 @@ document.addEventListener('DOMContentLoaded', () => {
         'その他'
     ];
 
+    // 現在アクティブなタブのアイテムをカテゴリでソートする関数
+    const sortCurrentTabItems = () => {
+        if (items[activeTabId]) {
+            items[activeTabId].sort((a, b) => {
+                const categoryAIndex = categories.indexOf(a.category || '未分類');
+                const categoryBIndex = categories.indexOf(b.category || '未分類');
+                if (categoryAIndex !== categoryBIndex) {
+                    return categoryAIndex - categoryBIndex;
+                }
+                // カテゴリが同じ場合はテキストでソート
+                return (a.text || '').localeCompare(b.text || '');
+            });
+        }
+    };
+
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        itemDiv.className = 'flex items-center p-4 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02]';
+        // 内部パディングは維持
+        itemDiv.className = 'flex items-center px-4 py-3 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02] mx-4'; /* mx-4を追加して左右の余白を確保 */
         
         // リストアイテムの背景色を白に固定
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -206,10 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const [checkedItem] = currentItems.splice(itemIndex, 1);
                 checkedItem.timestamp = Date.now();
                 checkedItem.tabId = activeTabId;
-                // historyにcategoryも保存
                 history.push({ ...checkedItem, category: checkedItem.category || '未分類' }); 
                 saveItems();
                 saveHistory();
+                sortCurrentTabItems(); // 完了後もソート
                 renderTabContents();
                 updateTabContentDisplay();
             }
@@ -233,6 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item) {
             item.category = newCategory;
             saveItems();
+            sortCurrentTabItems(); // カテゴリ変更後もソート
+            renderTabContents(); // 再レンダリングして順序を反映
+            updateTabContentDisplay(); // 高さも更新
         }
     };
 
@@ -246,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             items[activeTabId] = items[activeTabId].filter(item => item.id !== id);
             saveItems();
+            sortCurrentTabItems(); // 削除後もソート
             renderTabContents();
             updateTabContentDisplay();
         }, 500);
@@ -262,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items[activeTabId] = [];
         }
         items[activeTabId].push(newItem);
+        sortCurrentTabItems(); // 新規追加後もソート
         saveItems();
         renderTabContents();
         updateTabContentDisplay();
@@ -471,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
             monthlyHistory[yearMonth].forEach(item => {
                 const normalizedTaskText = katakanaToHiragana(item.text || '（テキストなし）');
                 const category = item.category || '未分類';
-                const key = `${category} - ${normalizedTaskText}`; // カテゴリとタスクを組み合わせたキー
+                const key = `${category} - ${normalizedTaskText}`;
                 taskCategoryCounts[key] = (taskCategoryCounts[key] || 0) + 1;
             });
 
@@ -480,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             Object.keys(taskCategoryCounts).sort().forEach(key => {
                 const count = taskCategoryCounts[key];
-                const [category, taskText] = key.split(' - '); // キーからカテゴリとタスクを分割
+                const [category, taskText] = key.split(' - ');
                 const listItem = document.createElement('li');
                 listItem.className = 'flex items-center bg-white p-3 border border-gray-200 rounded-md shadow-xs text-gray-800 break-words';
                 listItem.innerHTML = `
