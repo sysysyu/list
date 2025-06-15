@@ -80,6 +80,26 @@ document.addEventListener('DOMContentLoaded', () => {
         '医薬品': ['風邪薬', '絆創膏', '胃薬', 'マスク', '鎮痛剤', '消毒液'],
     };
 
+    // カテゴリに対応するFont Awesomeアイコンのマッピング
+    const categoryIcons = {
+        '未分類': 'fas fa-question-circle text-gray-400',
+        '飲料・お酒': 'fas fa-wine-bottle text-purple-500',
+        'お菓子': 'fas fa-cookie-bite text-pink-500',
+        '米・パン・種類': 'fas fa-bread-slice text-yellow-700',
+        '野菜': 'fas fa-carrot text-orange-500',
+        '海鮮': 'fas fa-fish-fins text-blue-500',
+        '肉・肉加工品': 'fas fa-drumstick-bite text-red-500',
+        '卵・チーズ・乳製品': 'fas fa-egg text-yellow-500',
+        '果物': 'fas fa-apple-whole text-red-400',
+        '冷凍食品': 'fas fa-snowflake text-blue-300',
+        '豆腐・納豆': 'fas fa-cube text-green-700', // 例としてcubeを使用
+        '缶詰・瓶詰め': 'fas fa-jar text-gray-600',
+        '調味料': 'fas fa-bottle-droplet text-brown-500',
+        '日用品': 'fas fa-soap text-blue-400',
+        '医薬品': 'fas fa-pills text-red-600',
+        'その他': 'fas fa-ellipsis-h text-gray-500'
+    };
+
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
         if (items[tabId]) {
@@ -223,7 +243,26 @@ document.addEventListener('DOMContentLoaded', () => {
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
-        // プルダウン (selectボックス)
+        // カテゴリアイコン
+        const categoryIcon = document.createElement('i');
+        const iconClass = categoryIcons[itemData.category || '未分類'];
+        if (iconClass) {
+            categoryIcon.className = `${iconClass} text-xl w-6 text-center`; // アイコンの色はcategoryIconsで定義
+        } else {
+            categoryIcon.className = `fas fa-question-circle text-gray-400 text-xl w-6 text-center`; // Fallback
+        }
+        categoryIcon.style.minWidth = '24px'; // アイコンの幅を固定してレイアウトの崩れを防ぐ
+
+        // 入力フィールド
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = itemData.text;
+        input.placeholder = 'ここにタスクを入力';
+        input.setAttribute('tabindex', '0'); 
+        input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
+        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect); // categorySelectを渡す
+
+        // プルダウン (selectボックス) - ゴミ箱アイコンの隣に移動
         const categorySelect = document.createElement('select');
         categorySelect.className = 'p-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:ring-blue-500 focus:border-blue-500 flex-shrink-0';
         
@@ -237,25 +276,17 @@ document.addEventListener('DOMContentLoaded', () => {
         categorySelect.value = itemData.category || '未分類';
         categorySelect.onchange = (e) => updateItemCategory(itemData.id, e.target.value);
 
-        // 入力フィールド
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = itemData.text;
-        input.placeholder = 'ここにタスクを入力';
-        input.setAttribute('tabindex', '0'); 
-        input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
-        input.oninput = (e) => updateItemText(itemData.id, e.target.value);
-
         // 削除ボタン
         const deleteButton = document.createElement('button');
         deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
-        // 要素の追加順序: チェックボックス、プルダウン、入力エリア、ゴミ箱アイコン
+        // 要素の追加順序: チェックボックス、カテゴリアイコン、入力エリア、プルダウン、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
-        itemDiv.appendChild(categorySelect);
+        itemDiv.appendChild(categoryIcon); // 新しい位置
         itemDiv.appendChild(input);
+        itemDiv.appendChild(categorySelect); // 新しい位置
         itemDiv.appendChild(deleteButton);
 
         return itemDiv;
@@ -287,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 入力エリアのテキストを更新
-    const updateItemText = (id, newText) => {
+    const updateItemText = (id, newText, categorySelectElement) => { // categorySelectElementを受け取る
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
@@ -318,6 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 現在のカテゴリと異なる場合のみ更新
             if (item.category !== foundCategory) {
                 item.category = foundCategory;
+                if (categorySelectElement) { // プルダウン要素があれば更新
+                    categorySelectElement.value = foundCategory;
+                }
                 saveItems(); // カテゴリ変更を保存
                 // カテゴリが変更された場合は、プルダウンの表示も更新するために再レンダリングが必要
                 // そしてソートも必要
