@@ -101,22 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
         'その他': 'fas fa-ellipsis-h text-gray-500'
     };
 
-    // パステル調のカラーパレット
-    const pastelColors = {
-        '白': '#ffffff', // デフォルト色
-        'パステルピンク': '#FFD1DC',
-        'パステルブルー': '#AEC6CF',
-        'パステルグリーン': '#77DD77',
-        'パステルイエロー': '#FDFD96',
-        'パステルパープル': '#B39EB5',
-        'パステルオレンジ': '#FFB347',
-        'パステルグレー': '#D3D3D3',
-        'ミントグリーン': '#98FB98',
-        'ラベンダー': '#E6E6FA',
-        'ピーチ': '#FFDAB9',
-        'スカイブルー': '#87CEEB'
+    // くすみカラーパレット
+    const duskyColors = {
+        'オフホワイト': '#F5F5DC', // デフォルト色
+        'くすみピンク': '#E6B9BE',
+        'くすみブルー': '#A9BECD',
+        'くすみグリーン': '#B5C9BB',
+        'くすみイエロー': '#E2E1B9',
+        'くすみパープル': '#C7B5D1',
+        'くすみオレンジ': '#EED7B8',
+        'くすみグレー': '#B0B0B0',
+        'ダスティローズ': '#C9A9A6',
+        'セージグリーン': '#A2B19F',
+        'モーブ': '#A797B1',
+        'テラコッタ': '#CC7E6E'
     };
-    const pastelColorValues = Object.values(pastelColors); // 色のHEX値の配列
+    const duskyColorValues = Object.values(duskyColors); // 色のHEX値の配列
 
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         paletteDiv.style.top = `${rect.bottom + window.scrollY + 5}px`;
         paletteDiv.style.left = `${rect.left + window.scrollX}px`;
 
-        pastelColorValues.forEach(color => {
+        duskyColorValues.forEach(color => { // duskyColorValuesを使用
             const colorSwatch = document.createElement('div');
             colorSwatch.className = 'w-8 h-8 rounded-full border border-gray-300 cursor-pointer transition-transform hover:scale-110';
             colorSwatch.style.backgroundColor = color;
@@ -320,14 +320,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
 
-        // チェックマーク (チェックボックス)
+        // チェックマーク (checkbox)
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
-        // 入力フィールド
+        // 入力フィールド (input)
         const input = document.createElement('input');
         input.type = 'text';
         input.value = itemData.text;
@@ -344,15 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 flex items-center justify-center';
-        colorIcon.style.backgroundColor = itemData.itemColor || pastelColors['白'];
-        colorIcon.innerHTML = '<i class="fas fa-palette text-gray-700 text-sm"></i>'; // パレットアイコンを内部に配置
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
+        colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
+        // パレットアイコンを削除
+        // colorIcon.innerHTML = '<i class="fas fa-palette text-gray-700 text-sm"></i>';
         colorIcon.onclick = (e) => {
             e.stopPropagation(); // 親要素のクリックイベントが発火するのを防ぐ
             showColorPalette(itemData.id, colorIcon);
         };
 
-        // 削除ボタン
+        // 削除ボタン (button)
         const deleteButton = document.createElement('button');
         deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
@@ -464,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
             text: '',
             checked: false,
             category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
-            itemColor: pastelColors['白'] // 新しいアイテムにデフォルト色を設定
+            itemColor: duskyColors['オフホワイト'] // 新しいアイテムにデフォルト色を設定
         };
         if (!items[activeTabId]) {
             items[activeTabId] = [];
