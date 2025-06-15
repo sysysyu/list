@@ -418,30 +418,38 @@ document.addEventListener('DOMContentLoaded', () => {
             monthlyHistory[yearMonth].push(item);
         });
 
+        // 月ごとのタスクをマージしてカウント
         for (const yearMonth in monthlyHistory) {
             const monthDiv = document.createElement('div');
-            monthDiv.className = 'bg-gray-50 p-4 rounded-lg shadow-sm';
+            monthDiv.className = 'bg-gray-50 p-4 rounded-lg shadow-sm mb-4'; // 各月のセクションに下マージンを追加
 
             const monthHeader = document.createElement('h3');
             monthHeader.className = 'text-xl font-semibold mb-3 text-gray-700 border-b pb-2';
-            monthHeader.textContent = `${yearMonth} (${monthlyHistory[yearMonth].length}個)`;
+            monthHeader.textContent = `${yearMonth} (${monthlyHistory[yearMonth].length}個の完了タスク)`; // 総完了数を表示
             monthDiv.appendChild(monthHeader);
 
-            const itemsGrid = document.createElement('div');
-            itemsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'; // 均等配置
-
+            const taskCounts = {};
             monthlyHistory[yearMonth].forEach(item => {
-                const tabName = tabs.find(t => t.id === item.tabId)?.name || '不明なタブ';
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center p-3 border border-gray-200 rounded-md bg-white shadow-xs text-gray-800 break-words';
-                itemDiv.innerHTML = `
-                    <i class="fas fa-check-circle text-green-500 mr-2 text-lg flex-shrink-0"></i>
-                    <span class="flex-grow text-sm truncate">${item.text || '（テキストなし）'}</span>
-                    <span class="ml-2 text-xs text-gray-500 flex-shrink-0">(${tabName})</span>
-                `;
-                itemsGrid.appendChild(itemDiv);
+                const taskText = item.text || '（テキストなし）';
+                taskCounts[taskText] = (taskCounts[taskText] || 0) + 1;
             });
-            monthDiv.appendChild(itemsGrid);
+
+            // マージされたタスクのリスト表示
+            const mergedTaskList = document.createElement('ul');
+            mergedTaskList.className = 'list-none p-0 m-0 space-y-2'; // リストスタイルをリセットし、スペースを追加
+
+            for (const taskText in taskCounts) {
+                const count = taskCounts[taskText];
+                const listItem = document.createElement('li');
+                listItem.className = 'flex items-center bg-white p-3 border border-gray-200 rounded-md shadow-xs text-gray-800 break-words';
+                listItem.innerHTML = `
+                    <i class="fas fa-check-circle text-green-500 mr-2 text-lg flex-shrink-0"></i>
+                    <span class="flex-grow text-base">${taskText}</span>
+                    <span class="ml-2 text-sm font-semibold text-blue-600 flex-shrink-0">(${count}回完了)</span>
+                `;
+                mergedTaskList.appendChild(listItem);
+            }
+            monthDiv.appendChild(mergedTaskList);
             historyContent.appendChild(monthDiv);
         }
     };
