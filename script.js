@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'ピーチ': '#FFDAB9',
         'スカイブルー': '#87CEEB'
     };
+    const pastelColorValues = Object.values(pastelColors); // 色のHEX値の配列
 
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
@@ -252,13 +253,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 現在表示されているカラーパレットがあれば削除する関数
+    const removeExistingColorPalette = () => {
+        const existingPalette = document.getElementById('color-palette-popup');
+        if (existingPalette) {
+            existingPalette.remove();
+        }
+    };
+
+    // カラーパレットを表示する関数
+    const showColorPalette = (itemId, targetElement) => {
+        // 既存のパレットがあれば削除
+        removeExistingColorPalette();
+
+        const paletteDiv = document.createElement('div');
+        paletteDiv.id = 'color-palette-popup';
+        paletteDiv.className = 'absolute z-50 bg-white p-2 rounded-lg shadow-lg flex flex-wrap gap-2';
+        
+        // パレットの表示位置を設定
+        const rect = targetElement.getBoundingClientRect();
+        paletteDiv.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        paletteDiv.style.left = `${rect.left + window.scrollX}px`;
+
+        pastelColorValues.forEach(color => {
+            const colorSwatch = document.createElement('div');
+            colorSwatch.className = 'w-8 h-8 rounded-full border border-gray-300 cursor-pointer transition-transform hover:scale-110';
+            colorSwatch.style.backgroundColor = color;
+            colorSwatch.onclick = (e) => {
+                e.stopPropagation(); // クリックがdocumentまで伝播するのを防ぐ
+
+                const currentItems = items[activeTabId];
+                const item = currentItems.find(item => item.id === itemId);
+                if (item) {
+                    item.itemColor = color; // 選択された色に更新
+                    saveItems(); // 保存
+
+                    // カラーアイコンの背景色を更新
+                    targetElement.style.backgroundColor = color;
+                    // itemDivの背景色は変更しない（ユーザーの要望による）
+                }
+                removeExistingColorPalette(); // パレットを閉じる
+            };
+            paletteDiv.appendChild(colorSwatch);
+        });
+
+        document.body.appendChild(paletteDiv);
+
+        // パレット外をクリックしたら閉じるためのイベントリスナー
+        const clickOutsideHandler = (event) => {
+            if (paletteDiv && !paletteDiv.contains(event.target) && event.target !== targetElement) {
+                removeExistingColorPalette();
+                document.removeEventListener('click', clickOutsideHandler);
+            }
+        };
+        // 次のイベントループでリスナーを追加 (パレット表示時のクリックで即座に閉じないように)
+        setTimeout(() => {
+            document.addEventListener('click', clickOutsideHandler);
+        }, 0);
+    };
+
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
         itemDiv.className = 'flex items-center px-4 py-3 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02] mx-4';
         
-        // リストアイテムの背景色を、アイテムのitemColorに基づいて設定
-        itemDiv.style.backgroundColor = itemData.itemColor || pastelColors['白']; 
+        // リストアイテムの背景色を白に固定 (ユーザーの要望)
+        itemDiv.style.backgroundColor = '#ffffff'; 
 
         // チェックマーク (チェックボックス)
         const checkbox = document.createElement('input');
@@ -282,27 +342,14 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTabContentDisplay();
         };
 
-        // カラーアイコン
+        // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 flex items-center justify-center';
         colorIcon.style.backgroundColor = itemData.itemColor || pastelColors['白'];
-        colorIcon.onclick = () => {
-            const currentColorValue = itemData.itemColor || pastelColors['白'];
-            const allColors = Object.values(pastelColors);
-            const currentIndex = allColors.indexOf(currentColorValue);
-            const nextIndex = (currentIndex + 1) % allColors.length;
-            const nextColor = allColors[nextIndex];
-            
-            itemData.itemColor = nextColor; // データを直接更新
-            saveItems(); // 変更を保存
-
-            // 即座にアイコンの色を更新 (見た目のフィードバック)
-            colorIcon.style.backgroundColor = nextColor;
-            // 親要素 (itemDiv) の背景色も更新
-            itemDiv.style.backgroundColor = nextColor;
-
-            // 色変更はソートには影響しないので、リスト全体の再レンダリングは不要
-            // ただし、タスクアイテムの背景色が即座に反映されるようにスタイルを更新
+        colorIcon.innerHTML = '<i class="fas fa-palette text-gray-700 text-sm"></i>'; // パレットアイコンを内部に配置
+        colorIcon.onclick = (e) => {
+            e.stopPropagation(); // 親要素のクリックイベントが発火するのを防ぐ
+            showColorPalette(itemData.id, colorIcon);
         };
 
         // 削除ボタン
@@ -382,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 入力エリアのカテゴリを更新 (手動でのカテゴリ変更手段がないため、ここでは使われないが残しておく)
+    // 入力エリアのカテゴリを更新 (自動設定されるため、手動変更は考慮しない)
     const updateItemCategory = (id, newCategory) => {
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
@@ -582,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // HEX色コードからRGBを抽出し、輝度を計算して適切なコントラストの文字色（白または黒）を返す関数
+    // HEX色コードからRGBを抽出し、輝度を計算して適切なコントラストの文字色（白または黒）を返す関数 (未使用だが残存)
     function getContrastColor(hexcolor) {
         const r = parseInt(hexcolor.substr(1, 2), 16);
         const g = parseInt(hexcolor.substr(3, 2), 16);
