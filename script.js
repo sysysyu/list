@@ -379,6 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // カタカナをひらがなに変換する関数
+    function katakanaToHiragana(str) {
+        return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+            return String.fromCharCode(match.charCodeAt(0) - 0x60);
+        });
+    }
+
     // 履歴一覧モーダルのレンダリング
     const renderHistoryList = () => {
         historyTabFilter.innerHTML = '<option value="all">全てのタブ</option>';
@@ -430,25 +437,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const taskCounts = {};
             monthlyHistory[yearMonth].forEach(item => {
-                const taskText = item.text || '（テキストなし）';
-                taskCounts[taskText] = (taskCounts[taskText] || 0) + 1;
+                // ここでカタカナをひらがなに変換してキーとして使用
+                const normalizedTaskText = katakanaToHiragana(item.text || '（テキストなし）');
+                taskCounts[normalizedTaskText] = (taskCounts[normalizedTaskText] || 0) + 1;
             });
 
             // マージされたタスクのリスト表示
             const mergedTaskList = document.createElement('ul');
             mergedTaskList.className = 'list-none p-0 m-0 space-y-2'; // リストスタイルをリセットし、スペースを追加
 
-            for (const taskText in taskCounts) {
-                const count = taskCounts[taskText];
+            // キー（正規化されたタスク名）でソートして表示
+            Object.keys(taskCounts).sort().forEach(normalizedTaskText => {
+                const count = taskCounts[normalizedTaskText];
                 const listItem = document.createElement('li');
                 listItem.className = 'flex items-center bg-white p-3 border border-gray-200 rounded-md shadow-xs text-gray-800 break-words';
+                // 表示用には正規化されていない元のテキスト（または最も一般的な表記）を使うことも考えられるが、ここでは正規化されたテキストを表示
+                // より良いユーザー体験のためには、履歴に保存する際に正規化されたテキストも保持するか、
+                // 最も頻繁に完了された元のテキストを表示するなどの工夫が必要になる。
+                // ここではシンプルに正規化されたテキストをそのまま表示します。
                 listItem.innerHTML = `
                     <i class="fas fa-check-circle text-green-500 mr-2 text-lg flex-shrink-0"></i>
-                    <span class="flex-grow text-base">${taskText}</span>
+                    <span class="flex-grow text-base">${normalizedTaskText}</span>
                     <span class="ml-2 text-sm font-semibold text-blue-600 flex-shrink-0">(${count}回完了)</span>
                 `;
                 mergedTaskList.appendChild(listItem);
-            }
+            });
             monthDiv.appendChild(mergedTaskList);
             historyContent.appendChild(monthDiv);
         }
