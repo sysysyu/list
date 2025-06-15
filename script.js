@@ -346,8 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const colorIcon = document.createElement('div');
         colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
         colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
-        // パレットアイコンを削除
-        // colorIcon.innerHTML = '<i class="fas fa-palette text-gray-700 text-sm"></i>';
+        // パレットアイコンを削除し、カラー自体を表示
         colorIcon.onclick = (e) => {
             e.stopPropagation(); // 親要素のクリックイベントが発火するのを防ぐ
             showColorPalette(itemData.id, colorIcon);
@@ -490,9 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tabItem.className = 'flex items-center bg-gray-100 p-3 rounded-md shadow-sm text-gray-700';
             tabItem.setAttribute('data-tab-id', tab.id);
 
-            const tabNameSpan = document.createElement('span');
-            tabNameSpan.textContent = tab.name;
-            tabNameSpan.className = 'flex-grow font-medium';
+            const tabNameInput = document.createElement('div'); // inputからcontenteditableなdivに変更
+            tabNameInput.contentEditable = true;
+            tabNameInput.textContent = tab.name;
+            tabNameInput.className = 'flex-grow font-medium p-1 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors';
+            tabNameInput.onblur = (e) => updateTabName(tab.id, e.target.textContent); // フォーカスアウトで更新
+            tabItem.appendChild(tabNameInput);
 
             const deleteTabButton = document.createElement('button');
             deleteTabButton.className = 'ml-3 p-1 text-red-500 hover:text-red-700 transition-colors rounded-full';
@@ -504,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
             moveHandle.innerHTML = '<i class="fas fa-arrows-alt"></i>';
             moveHandle.draggable = true;
 
-            tabItem.appendChild(tabNameSpan);
+            // tabItem.appendChild(tabNameSpan); // 旧spanは削除
             tabItem.appendChild(deleteTabButton);
             tabItem.appendChild(moveHandle);
             tabsList.appendChild(tabItem);
@@ -567,6 +569,16 @@ document.addEventListener('DOMContentLoaded', () => {
             item.addEventListener('drop', handleDrop);
             item.addEventListener('dragend', handleDragEnd);
         });
+    };
+
+    // タブ名を更新する関数
+    const updateTabName = (tabId, newName) => {
+        const tab = tabs.find(t => t.id === tabId);
+        if (tab) {
+            tab.name = newName.trim() || '無題のタブ'; // 空の場合はデフォルト名
+            saveTabs();
+            renderTabs(); // メインUIのタブボタンを更新
+        }
     };
 
     tabSettingsBtn.onclick = () => {
