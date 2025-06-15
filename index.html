@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2113.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+    span.s1 {font: 12.0px 'Hiragino Sans'}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="ja"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;<span class="s1">タスク管理アプリ</span>&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Tailwind CSS CDN --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Font Awesome for Icons --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Custom CSS --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="stylesheet" href="style.css"&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body class="min-h-screen flex flex-col"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">ヘッダー</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg p-4 sticky top-0 z-50 rounded-b-xl"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="container mx-auto flex items-center justify-between"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;!-- <span class="s1">タブエリア</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="tabContainer" class="flex-grow overflow-x-auto whitespace-nowrap scroll-smooth py-1 px-2 -mx-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- <span class="s1">タブがここに動的に追加されます</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;!-- <span class="s1">ヘッダーアイコン</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="flex space-x-4 pl-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- <span class="s1">タブ設定ボタン</span> (<span class="s1">歯車マーク</span>) --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="tabSettingsBtn" class="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;i class="fas fa-cog text-xl"&gt;&lt;/i&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- <span class="s1">履歴一覧ボタン</span> (<span class="s1">メモマーク</span>) --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="historyListBtn" class="p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;i class="fas fa-clipboard-list text-xl"&gt;&lt;/i&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">メインコンテンツエリア</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;main class="flex-grow p-4 overflow-hidden relative"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="tabContentWrapper" class="tab-content-wrapper h-full"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;!-- <span class="s1">タブの内容がここに動的に追加されます</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/main&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">フローティングアクションボタン</span> (FAB) --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="addInputAreaBtn" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;i class="fas fa-plus text-2xl"&gt;&lt;/i&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/button&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">タブ設定モーダル</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="tabSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden modal-overlay"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md modal-content transform transition-all duration-300 scale-95 opacity-0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2 class="text-2xl font-bold mb-4 text-gray-800"&gt;<span class="s1">タブ設定</span>&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="tabsList" class="mb-4 space-y-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- <span class="s1">タブアイテムがここに動的に追加されます</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="newTabNameInput" placeholder="<span class="s1">新しいタブ名</span>" class="w-full p-3 border border-gray-300 rounded-md mb-2 focus:ring-blue-500 focus:border-blue-500"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="flex space-x-2 mb-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="addTabBtn" class="flex-grow bg-green-500 text-white p-3 rounded-md hover:bg-green-600 transition-colors"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;i class="fas fa-plus mr-2"&gt;&lt;/i&gt;<span class="s1">タブを追加</span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="clearAllHistoryBtn" class="flex-grow bg-red-500 text-white p-3 rounded-md hover:bg-red-600 transition-colors"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;i class="fas fa-trash-alt mr-2"&gt;&lt;/i&gt;<span class="s1">履歴を全消去</span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="closeTabSettingsModalBtn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-md hover:bg-gray-400 transition-colors"&gt;<span class="s1">閉じる</span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- <span class="s1">履歴一覧モーダル</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="historyListModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden modal-overlay"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl h-full max-h-[90vh] flex flex-col modal-content transform transition-all duration-300 scale-95 opacity-0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2 class="text-2xl font-bold mb-4 text-gray-800"&gt;<span class="s1">履歴一覧</span>&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="mb-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;label for="historyTabFilter" class="block text-gray-700 text-sm font-bold mb-2"&gt;<span class="s1">タブでフィルタ</span>:&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;select id="historyTabFilter" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;option value="all"&gt;<span class="s1">全てのタブ</span>&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;!-- <span class="s1">タブオプションがここに動的に追加されます</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="historyContent" class="flex-grow overflow-y-auto pr-2 space-y-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- <span class="s1">履歴コンテンツがここに動的に追加されます</span> --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="closeHistoryListModalBtn" class="mt-4 w-full bg-gray-300 text-gray-800 p-3 rounded-md hover:bg-gray-400 transition-colors"&gt;<span class="s1">閉じる</span>&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Custom JavaScript --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="script.js"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
