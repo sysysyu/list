@@ -514,8 +514,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            // Each tabContentDiv now takes 100% width of the visible area
-            tabContentDiv.className = 'tab-content py-4 px-0 space-y-4 overflow-y-auto'; 
+            // Changed px-0 to px-2 for padding from the edge
+            tabContentDiv.className = 'tab-content py-4 px-2 space-y-4 overflow-y-auto'; 
             tabContentDiv.style.width = `${100 / tabs.length}%`; // Distribute width evenly within the flex container
             tabContentDiv.style.flexShrink = '0'; // Prevent shrinking
 
@@ -583,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sortCurrentTabItems(); // タブ切り替え時にアイテムをソート
         renderTabContents();
         updateTabContentDisplay();
+        window.scrollTo(0, 0); // Scroll to top of the page on tab switch
     };
 
     // 現在アクティブなタブのアイテムをカテゴリでソートする関数
@@ -663,8 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
         // Adjusted px, py, mx, space-x for better mobile responsiveness and compactness
-        // px-1, mx-1, space-x-1 to make it even more compact for smaller screens
-        itemDiv.className = 'flex items-center px-1 py-2 rounded-xl shadow-md space-x-1 transition-all duration-300 transform hover:scale-[1.02] mx-1';
+        // Removed mx-1, px-1. Parent tabContentDiv now handles horizontal padding.
+        itemDiv.className = 'flex items-center py-2 rounded-xl shadow-md space-x-1 transition-all duration-300 transform hover:scale-[1.02]';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -699,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         text: '',
                         checked: false,
                         category: '未分類',
-                        itemColor: duskyColors['オフホワイト']
+                        itemColor: duskyColors['オフwhite']
                     };
                     if (!items[activeTabId]) {
                         items[activeTabId] = [];
@@ -1156,11 +1157,14 @@ document.addEventListener('DOMContentLoaded', () => {
     tabContentWrapper.addEventListener('touchstart', (e) => {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY; // Capture initial Y
-        currentTranslateX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
+        // Get the current transform value directly from the style
+        const transformMatch = tabContentWrapper.style.transform.match(/translateX\(([^%]+)%\)/);
+        currentTranslateX = transformMatch ? parseFloat(transformMatch[1]) : 0;
+
         isDragging = false; // Reset dragging state
         swipeDirectionDetermined = false; // Reset direction flag
-        tabContentWrapper.style.transition = 'none';
-    }, { passive: true }); // Use passive to avoid blocking scroll initially
+        tabContentWrapper.style.transition = 'none'; // Disable transition during drag
+    }, { passive: true }); // Use passive: true to avoid blocking scroll initially
 
     tabContentWrapper.addEventListener('touchmove', (e) => {
         const currentX = e.touches[0].clientX;
@@ -1170,16 +1174,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const threshold = 5; // Minimum movement to consider as a swipe/scroll
 
         if (!swipeDirectionDetermined) {
+            // Determine if it's a horizontal swipe or vertical scroll
             if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
                 if (Math.abs(diffX) > Math.abs(diffY)) {
-                    // Horizontal swipe
+                    // Horizontal swipe detected
                     isDragging = true;
                     swipeDirectionDetermined = true;
-                    e.preventDefault(); // Prevent vertical scroll if it's horizontal swipe
+                    e.preventDefault(); // Prevent default vertical scrolling
                 } else {
-                    // Vertical scroll
+                    // Vertical scroll detected
                     swipeDirectionDetermined = true;
-                    return; // Let default scroll happen
+                    return; // Let browser handle vertical scroll
                 }
             } else {
                 return; // Not enough movement to determine direction
@@ -1188,47 +1193,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isDragging) {
             e.preventDefault(); // Continue preventing default if identified as horizontal swipe
-            tabContentWrapper.style.transform = `translateX(${currentTranslateX + (diffX / window.innerWidth) * 100}%)`;
+            let targetPercentage = currentTranslateX + (diffX / window.innerWidth) * 100;
+
+            // Calculate boundaries for the translation based on number of tabs
+            const maxAllowedX = 0; // The first tab is at 0% translation
+            const minAllowedX = -(tabs.length - 1) * (100 / tabs.length); // The last tab's leftmost position
+
+            // Clamp the targetPercentage within the allowed boundaries
+            targetPercentage = Math.max(minAllowedX, Math.min(targetPercentage, maxAllowedX));
+
+            tabContentWrapper.style.transform = `translateX(${targetPercentage}%)`;
         }
-    }, { passive: false }); // Use passive: false when e.preventDefault() is used
+    }, { passive: false }); // Use passive: false because e.preventDefault() is called
 
     tabContentWrapper.addEventListener('touchend', () => {
         if (!isDragging) return; // Only process if it was a horizontal drag
 
         isDragging = false;
-        swipeDirectionDetermined = false;
-        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out';
+        swipeDirectionDetermined = false; // Reset for next touch event
+        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Re-enable transition for snap back
 
         const endX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
-        const swipeThreshold = 15; // Percentage threshold for a successful swipe
+        const swipeThresholdPercentage = 15; // Percentage of element width for a successful swipe
 
         const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
         let newActiveTabIndex = activeTabIndex;
 
-        if (endX < currentTranslateX - swipeThreshold) { // Swiped left
+        const currentTabStartPercentage = -(activeTabIndex * (100 / tabs.length));
+
+        // Determine swipe direction based on how far the swipe moved from the current tab's position
+        if (endX < currentTabStartPercentage - swipeThresholdPercentage) { // Swiped left significantly
             newActiveTabIndex++;
-        }
-        else if (endX > currentTranslateX + swipeThreshold) { // Swiped right
+        } else if (endX > currentTabStartPercentage + swipeThresholdPercentage) { // Swiped right significantly
             newActiveTabIndex--;
         }
 
-        // Clamp newActiveTabIndex to valid range
+        // Clamp newActiveTabIndex to valid range (0 to tabs.length - 1)
         newActiveTabIndex = Math.max(0, Math.min(newActiveTabIndex, tabs.length - 1));
 
-        // If index changed, switch tab, otherwise snap back to current
+        // If the calculated new index is different from the current active index, switch tab
         if (newActiveTabIndex !== activeTabIndex) {
             switchTab(tabs[newActiveTabIndex].id);
         } else {
-            // Snap back to current tab if swipe was not enough
+            // Snap back to current tab if swipe was not enough or no significant swipe
+            // This is already handled by updateTabContentDisplay after switchTab or explicitly here
             updateTabContentDisplay();
         }
         
+        // After potential tab switch or snap back, ensure content height is correct
         setTimeout(() => {
             const activeContentDiv = document.getElementById(`tab-content-${activeTabId}`);
             if (activeContentDiv) {
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
             }
-        }, 300);
+        }, 300); // Allow transition to complete before re-evaluating height
     });
 
     window.addEventListener('resize', () => {
