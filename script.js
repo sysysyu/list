@@ -15,8 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
-    // LLM関連の要素は削除されました
-
     // Utility functions for color conversion and lightening
     // HEX色コードをHSL形式に変換する関数
     function hexToHsl(hex) {
@@ -91,15 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function lightenHexColor(hex, percent) {
         const [h, s, l] = hexToHsl(hex);
         let newL = Math.min(100, l + percent); // 明度を増やし、最大100%
-        // パステル調を保つために、最低明度を保証
-        if (newL < 70) newL = 70; // 70%より明るくなるように調整 (より明るいパステル)
+        // パステル調を保つために、最低明度を保証 (調整可能)
+        if (newL < 70) newL = 70; 
         return hslToHex(h, s, newL);
     }
 
     // デフォルトのパステル調の色を設定
-    // 初期タブの色を設定（HSLで明度が高めの色から開始）
-    const initialDefaultTabColor = '#A7C7E7'; // パステルブルーのHEX
-    const initialDefaultListColor = lightenHexColor(initialDefaultTabColor, 20); // タブより20%明るく
+    const initialDefaultTabColor = '#A7C7E7'; // パステルブルーのHEX (濃いめ)
+    const initialDefaultListColor = lightenHexColor(initialDefaultTabColor, 15); // タブより15%明るく
 
     let tabs = JSON.parse(localStorage.getItem('tabs')) || [{ id: 'default', name: 'デフォルト', tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor }];
     
@@ -115,8 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
     let items = JSON.parse(localStorage.getItem('items')) || {}; // { tabId: [{ id, text, checked }, ...] }
     let history = JSON.parse(localStorage.getItem('history')) || []; // [{ id, text, tabId, timestamp }]
-
-    // LLM提案を適用する入力フィールドの参照は不要になりました
 
     // 初期データを設定
     if (!items[activeTabId]) {
@@ -149,21 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // タブのレンダリング
     const renderTabs = () => {
         tabContainer.innerHTML = '';
+        tabContainer.classList.add('tab-container-compact'); // 新しいコンテナクラスを追加
         tabs.forEach(tab => {
             const button = document.createElement('button');
             button.id = `tab-${tab.id}`;
-            button.className = `px-4 py-2 mx-1 rounded-full text-sm font-medium transition-all duration-200 ease-in-out`;
+            button.className = `tab-button text-sm font-medium`; // Tailwindクラスを減らし、カスタムCSSを使用
             button.textContent = tab.name;
             button.onclick = () => switchTab(tab.id);
 
             if (tab.id === activeTabId) {
-                button.classList.add('text-white', 'shadow-md');
-                button.style.backgroundColor = tab.tabBgColor; // アクティブなタブの背景色を適用
+                button.classList.add('active-tab');
+                button.style.setProperty('--tab-bg-color', tab.tabBgColor); // アクティブなタブの背景色をCSS変数で設定
             } else {
-                button.classList.add('text-white', 'hover:bg-white', 'hover:bg-opacity-20');
-                // 非アクティブなタブも少し透明度のある色にするか、白に戻すか検討
-                // 現在はTailwindのopacityで対応。ここでは白に戻す。
-                button.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; // 薄い白で非アクティブを示す
+                // 非アクティブなタブの背景色はCSSで設定済み
             }
             tabContainer.appendChild(button);
         });
@@ -245,8 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
 
-        // 提案ボタン (LLM機能) は削除されました
-
         // 削除ボタン
         const deleteButton = document.createElement('button');
         deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
@@ -255,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         itemDiv.appendChild(checkbox);
         itemDiv.appendChild(input);
-        itemDiv.appendChild(deleteButton); // 提案ボタンが削除されたため、削除ボタンの位置が変わる可能性あり
+        itemDiv.appendChild(deleteButton);
 
         return itemDiv;
     };
@@ -357,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             colorInput.onchange = (e) => {
                 const newTabColor = e.target.value;
                 tab.tabBgColor = newTabColor;
-                tab.listBgColor = lightenHexColor(newTabColor, 20); // タブの色からリスト色を生成（20%明るく）
+                tab.listBgColor = lightenHexColor(newTabColor, 15); // タブの色からリスト色を生成（15%明るく）
                 saveTabs();
                 renderTabs(); // メインのタブ表示を更新
                 renderTabContents(); // リストアイテムの背景色を更新
@@ -575,10 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const count = taskCounts[normalizedTaskText];
                 const listItem = document.createElement('li');
                 listItem.className = 'flex items-center bg-white p-3 border border-gray-200 rounded-md shadow-xs text-gray-800 break-words';
-                // 表示用には正規化されていない元のテキスト（または最も一般的な表記）を使うことも考えられるが、ここでは正規化されたテキストを表示
-                // より良いユーザー体験のためには、履歴に保存する際に正規化されたテキストも保持するか、
-                // 最も頻繁に完了された元のテキストを表示するなどの工夫が必要になる。
-                // ここではシンプルに正規化されたテキストをそのまま表示します。
                 listItem.innerHTML = `
                     <i class="fas fa-check-circle text-green-500 mr-2 text-lg flex-shrink-0"></i>
                     <span class="flex-grow text-base">${normalizedTaskText}</span>
@@ -621,9 +608,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('全ての履歴が消去されました。');
         }
     };
-
-    // --- LLM (Gemini API) 関連機能は削除されました ---
-
 
     // --- タブのスライド切り替え機能 (タッチイベント) ---
     let startX = 0;
