@@ -260,7 +260,13 @@ document.addEventListener('DOMContentLoaded', () => {
         input.placeholder = 'ここにタスクを入力';
         input.setAttribute('tabindex', '0'); 
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
-        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect); // categorySelectを渡す
+        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect, categoryIcon); // categorySelectとcategoryIconを渡す
+        // フォーカスアウト時にソートと再レンダリングを実行
+        input.onblur = () => {
+            sortCurrentTabItems();
+            renderTabContents();
+            updateTabContentDisplay();
+        };
 
         // プルダウン (selectボックス) - ゴミ箱アイコンの隣に移動
         const categorySelect = document.createElement('select');
@@ -318,49 +324,49 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 入力エリアのテキストを更新
-    const updateItemText = (id, newText, categorySelectElement) => { // categorySelectElementを受け取る
+    const updateItemText = (id, newText, categorySelectElement, categoryIconElement) => { // categoryIconElementも受け取る
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
+            const oldText = item.text; // 古いテキストを保持
             item.text = newText;
 
-            // カテゴリの自動設定ロジック
-            const normalizedInput = katakanaToHiragana(newText.toLowerCase());
-            let foundCategory = '未分類'; // デフォルト
+            // テキストが変更された場合のみカテゴリ自動設定ロジックを実行
+            if (oldText !== newText) {
+                const normalizedInput = katakanaToHiragana(newText.toLowerCase());
+                let foundCategory = '未分類'; // デフォルト
 
-            // より具体的なキーワードからチェック
-            let matched = false;
-            for (const category of categories) { // カテゴリ配列の順序で優先度を付ける
-                if (category === '未分類' || category === 'その他') continue; // 未分類とその他はスキップ
+                let matched = false;
+                for (const category of categories) {
+                    if (category === '未分類' || category === 'その他') continue;
 
-                const keywords = categoryKeywords[category];
-                if (keywords) {
-                    for (const keyword of keywords) {
-                        if (normalizedInput.includes(katakanaToHiragana(keyword).toLowerCase())) {
-                            foundCategory = category;
-                            matched = true;
-                            break; // 一致したらループを抜ける
+                    const keywords = categoryKeywords[category];
+                    if (keywords) {
+                        for (const keyword of keywords) {
+                            if (normalizedInput.includes(katakanaToHiragana(keyword).toLowerCase())) {
+                                foundCategory = category;
+                                matched = true;
+                                break;
+                            }
                         }
                     }
+                    if (matched) break;
                 }
-                if (matched) break;
-            }
 
-            // 現在のカテゴリと異なる場合のみ更新
-            if (item.category !== foundCategory) {
-                item.category = foundCategory;
-                if (categorySelectElement) { // プルダウン要素があれば更新
-                    categorySelectElement.value = foundCategory;
+                // 現在のカテゴリと異なる場合のみ更新
+                if (item.category !== foundCategory) {
+                    item.category = foundCategory;
+                    if (categorySelectElement) { // プルダウン要素があれば更新
+                        categorySelectElement.value = foundCategory;
+                    }
+                    if (categoryIconElement) { // アイコン要素があれば更新
+                        const iconClass = categoryIcons[foundCategory] || categoryIcons['未分類'];
+                        categoryIconElement.className = `${iconClass} text-xl w-6 text-center`;
+                    }
+                    // ここではソートと再レンダリングは行わない（onblurに任せる）
                 }
-                saveItems(); // カテゴリ変更を保存
-                // カテゴリが変更された場合は、プルダウンの表示も更新するために再レンダリングが必要
-                // そしてソートも必要
-                sortCurrentTabItems(); // ソート
-                renderTabContents(); // 再レンダリング
-                updateTabContentDisplay(); // 高さ調整
-            } else {
-                saveItems(); // テキストのみの変更を保存
             }
+            saveItems(); // テキストとカテゴリの変更を保存
         }
     };
 
