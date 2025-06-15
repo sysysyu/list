@@ -63,21 +63,25 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // カテゴリ自動設定のためのキーワードマッピング
+    // このデータは、通常は外部ファイル（JSONなど）で管理されますが、
+    // この環境では簡略化のためJavaScriptコード内に直接記述しています。
+    // キーワードを増やしたい場合は、以下のオブジェクトを直接編集してください。
     const categoryKeywords = {
-        '野菜': ['じゃがいも', 'ジャガイモ', 'にんじん', 'たまねぎ', 'レタス', 'きゅうり', 'なす', 'ピーマン', 'キャベツ', 'ほうれん草', 'ブロッコリー', 'トマト', '大根', 'ごぼう', '蓮根', '玉ねぎ', '茄子'],
-        '果物': ['りんご', 'バナナ', 'みかん', 'いちご', 'ぶどう', 'もも', 'なし', 'メロン', 'スイカ', 'キウイ', 'オレンジ', 'レモン'],
-        '肉・肉加工品': ['鶏肉', '豚肉', '牛肉', 'ひき肉', 'ベーコン', 'ハム', 'ソーセージ', '鶏もも', '豚バラ', '牛すじ'],
-        '海鮮': ['魚', '鮭', 'マグロ', 'エビ', 'カニ', 'イカ', 'タコ', 'あさり', 'ホタテ', '刺身', 'まぐろ', 'えび', 'かに', 'いか', 'たこ'],
-        '米・パン・種類': ['米', 'ごはん', 'パン', '食パン', '菓子パン', 'うどん', 'そば', 'パスタ', 'ラーメン', 'もち', '蕎麦', '饂飩'],
-        '飲料・お酒': ['水', 'お茶', '牛乳', 'ジュース', 'コーヒー', '紅茶', 'ビール', 'ワイン', '日本酒', '焼酎', '烏龍茶', '緑茶', '麦茶'],
-        'お菓子': ['チョコレート', 'クッキー', 'ポテトチップス', 'スナック菓子', 'アイス', 'ケーキ', 'プリン', 'ゼリー', 'せんべい', 'チョコ', 'アイスクリーム', 'ビスケット'],
-        '卵・チーズ・乳製品': ['卵', 'たまご', 'チーズ', 'ヨーグルト', 'バター', '牛乳', '生クリーム'],
-        '冷凍食品': ['冷凍うどん', '冷凍餃子', '冷凍野菜', '冷凍ごはん', '冷凍からあげ', '冷凍食品'],
-        '豆腐・納豆': ['豆腐', '納豆', '油揚げ', '厚揚げ'],
-        '缶詰・瓶詰め': ['ツナ缶', 'サバ缶', 'トマト缶', 'ジャム', 'はちみつ', '瓶詰め', '缶詰', '魚缶'],
-        '調味料': ['醤油', '塩', '砂糖', '酢', '油', 'みりん', '料理酒', 'ケチャップ', 'マヨネーズ', '味噌', 'しょうゆ', 'しお', 'さとう', 'お酢', 'みそ'],
-        '日用品': ['ティッシュ', 'トイレットペーパー', '洗剤', 'シャンプー', 'リンス', '歯ブラシ', '石鹸', 'ゴミ袋', 'ラップ', 'アルミホイル', '電池', '洗顔', '歯磨き粉'],
-        '医薬品': ['風邪薬', '絆創膏', '胃薬', 'マスク', '鎮痛剤', '消毒液'],
+        '野菜': ['じゃがいも', 'ジャガイモ', 'にんじん', 'たまねぎ', 'レタス', 'きゅうり', 'なす', 'ピーマン', 'キャベツ', 'ほうれん草', 'ブロッコリー', 'トマト', '大根', 'ごぼう', '蓮根', '玉ねぎ', '茄子', 'アボカド', 'きのこ', 'しいたけ', 'エリンギ', '舞茸', 'えのき', 'パセリ', 'セロリ', 'ねぎ', '長ネギ', 'みつば', '小松菜', '水菜', 'チンゲン菜', 'アスパラガス', 'カリフラワー', '白菜', 'もやし', 'かいわれ', 'スプラウト', 'ゴボウ', 'ダイコン', 'ハクサイ'],
+        '果物': ['りんご', 'バナナ', 'みかん', 'いちご', 'ぶどう', 'もも', 'なし', 'メロン', 'スイカ', 'キウイ', 'オレンジ', 'レモン', 'グレープフルーツ', 'パイナップル', 'マンゴー', 'アボカド', 'さくらんぼ', '柿', '梨', '葡萄', '苺', '桃'],
+        '肉・肉加工品': ['鶏肉', '豚肉', '牛肉', 'ひき肉', 'ベーコン', 'ハム', 'ソーセージ', '鶏もも', '豚バラ', '牛すじ', '合挽肉', '鳥肉', 'ロース', 'モモ', 'バラ', 'ミンチ', '手羽先', 'ささみ', 'むね肉', 'レバー', 'ホルモン', 'サラミ'],
+        '海鮮': ['魚', '鮭', 'マグロ', 'エビ', 'カニ', 'イカ', 'タコ', 'あさり', 'ホタテ', '刺身', 'まぐろ', 'えび', 'かに', 'いか', 'たこ', 'いか', 'カツオ', 'サンマ', 'アジ', 'サバ', 'イワシ', 'ブリ', 'タイ', 'タラ', 'カレイ', '貝', '海老', '蟹', '鮪'],
+        '米・パン・種類': ['米', 'ごはん', 'パン', '食パン', '菓子パン', 'うどん', 'そば', 'パスタ', 'ラーメン', 'もち', '蕎麦', '饂飩', 'そうめん', 'ひやむぎ', '中華麺', 'ホットケーキ', 'シリアル', '餅', 'ご飯', '麦', '雑穀'],
+        '飲料・お酒': ['水', 'お茶', '牛乳', 'ジュース', 'コーヒー', '紅茶', 'ビール', 'ワイン', '日本酒', '焼酎', '烏龍茶', '緑茶', '麦茶', 'コーラ', 'サイダー', '清涼飲料水', '炭酸水', 'ミネラルウォーター', '缶コーヒー', '果汁', 'カクテル', 'ハイボール', '酎ハイ', '酒', '発泡酒'],
+        'お菓子': ['チョコレート', 'クッキー', 'ポテトチップス', 'スナック菓子', 'アイス', 'ケーキ', 'プリン', 'ゼリー', 'せんべい', 'チョコ', 'アイスクリーム', 'ビスケット', '和菓子', '洋菓子', 'グミ', 'キャンディ', 'ガム', 'チップス', 'ドーナツ', 'カステラ', '大福', '団子', '飴'],
+        '卵・チーズ・乳製品': ['卵', 'たまご', 'チーズ', 'ヨーグルト', 'バター', '牛乳', '生クリーム', 'カマンベール', 'モッツァレラ', 'プロセスチーズ', 'スライスチーズ', 'マーガリン', 'ホイップクリーム', '乳酸菌飲料', '飲むヨーグルト', '卵黄', '卵白'],
+        '冷凍食品': ['冷凍うどん', '冷凍餃子', '冷凍野菜', '冷凍ごはん', '冷凍からあげ', '冷凍食品', '冷凍パスタ', '冷凍ピザ', '冷凍フライドポテト', '冷凍コロッケ', '冷凍シューマイ', '冷凍チャーハン', '冷食'],
+        '豆腐・納豆': ['豆腐', '納豆', '油揚げ', '厚揚げ', '高野豆腐', '枝豆豆腐', '木綿豆腐', '絹ごし豆腐', 'がんもどき'],
+        '缶詰・瓶詰め': ['ツナ缶', 'サバ缶', 'トマト缶', 'ジャム', 'はちみつ', '瓶詰め', '缶詰', '魚缶', 'コーン缶', '桃缶', 'フルーツ缶', 'のり佃煮', '梅干し', 'びん詰め', 'カンヅメ'],
+        '調味料': ['醤油', '塩', '砂糖', '酢', '油', 'みりん', '料理酒', 'ケチャップ', 'マヨネーズ', '味噌', 'しょうゆ', 'しお', 'さとう', 'お酢', 'みそ', 'だし', 'めんつゆ', 'ソース', 'ドレッシング', 'わさび', 'しょうが', 'ニンニク', '七味', 'ラー油', '胡椒', 'ごま油', 'オリーブオイル', '粉末だし'],
+        '日用品': ['ティッシュ', 'トイレットペーパー', '洗剤', 'シャンプー', 'リンス', '歯ブラシ', '石鹸', 'ゴミ袋', 'ラップ', 'アルミホイル', '電池', '洗顔', '歯磨き粉', 'マスク', 'ハンドソープ', '柔軟剤', '漂白剤', 'スポンジ', 'ふきん', '台所洗剤', '食器用洗剤', '洗濯洗剤', 'ボディソープ'],
+        '医薬品': ['風邪薬', '絆創膏', '胃薬', 'マスク', '鎮痛剤', '消毒液', 'うがい薬', '目薬', '湿布', '体温計', '栄養ドリンク', '胃腸薬', '頭痛薬', '咳止め'],
+        'その他': ['雑誌', '新聞', '書籍', '文房具', '切手', 'ハガキ', 'ペット用品', '観葉植物', '花', '園芸用品', '工具', '電球', '乾電池', 'SDカード', 'USBメモリ', 'プリンターインク', '清掃用品', '園芸', '防災グッズ', 'レジ袋', '割り箸', '食器', 'コップ', 'タオル', 'ハンカチ', '靴下', '下着', '洗顔料', '化粧水', '乳液', '美容液', 'メイク落とし', '日焼け止め', 'ヘアスプレー', 'ワックス', 'ヘアカラー', '白髪染め'],
     };
 
     // カテゴリに対応するFont Awesomeアイコンのマッピング
@@ -92,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '卵・チーズ・乳製品': 'fas fa-egg text-yellow-500',
         '果物': 'fas fa-apple-whole text-red-400',
         '冷凍食品': 'fas fa-snowflake text-blue-300',
-        '豆腐・納豆': 'fas fa-cube text-green-700', // 例としてcubeを使用
+        '豆腐・納豆': 'fas fa-cube text-green-700',
         '缶詰・瓶詰め': 'fas fa-jar text-gray-600',
         '調味料': 'fas fa-bottle-droplet text-brown-500',
         '日用品': 'fas fa-soap text-blue-400',
@@ -158,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            // リストの表示を画面いっぱいに広げるため、px-0を適用
             tabContentDiv.className = 'tab-content py-4 px-0 space-y-4 overflow-y-auto'; 
             
             if (!items[tab.id]) {
@@ -176,13 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
                     if (categoryItemsExist) {
                         const categorySubtitleContainer = document.createElement('h4');
-                        // サブタイトルにTailwindクラスを適用
-                        categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2'; // アイコンとテキストを並べるためにflex
+                        categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2';
                         
                         // カテゴリサブタイトルアイコン
                         const subtitleIcon = document.createElement('i');
                         const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
-                        subtitleIcon.className = `${iconClass} text-xl`; // アイコンの色はcategoryIconsで定義
+                        subtitleIcon.className = `${iconClass} text-xl`;
                         
                         const subtitleText = document.createElement('span');
                         subtitleText.textContent = itemCategory;
@@ -240,8 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // 内部パディングは維持
-        itemDiv.className = 'flex items-center px-4 py-3 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02] mx-4'; /* mx-4を追加して左右の余白を確保 */
+        itemDiv.className = 'flex items-center px-4 py-3 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02] mx-4';
         
         // リストアイテムの背景色を白に固定
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -253,16 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
-        // カテゴリアイコン（入力エリア横からは削除）
-        // const categoryIcon = document.createElement('i');
-        // const iconClass = categoryIcons[itemData.category || '未分類'];
-        // if (iconClass) {
-        //     categoryIcon.className = `${iconClass} text-xl w-6 text-center`;
-        // } else {
-        //     categoryIcon.className = `fas fa-question-circle text-gray-400 text-xl w-6 text-center`;
-        // }
-        // categoryIcon.style.minWidth = '24px';
-
         // 入力フィールド
         const input = document.createElement('input');
         input.type = 'text';
@@ -270,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.placeholder = 'ここにタスクを入力';
         input.setAttribute('tabindex', '0'); 
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
-        input.oninput = (e) => updateItemText(itemData.id, e.target.value, categorySelect); // categoryIconを渡さない
+        input.oninput = (e) => updateItemText(itemData.id, e.target.value);
         // フォーカスアウト時にソートと再レンダリングを実行
         input.onblur = () => {
             sortCurrentTabItems();
@@ -278,19 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTabContentDisplay();
         };
 
-        // プルダウン (selectボックス) - ゴミ箱アイコンの隣に移動
-        const categorySelect = document.createElement('select');
-        categorySelect.className = 'p-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:ring-blue-500 focus:border-blue-500 flex-shrink-0';
-        
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        });
-        // itemDataにcategoryがあればそれを設定、なければ「未分類」を選択
-        categorySelect.value = itemData.category || '未分類';
-        categorySelect.onchange = (e) => updateItemCategory(itemData.id, e.target.value);
+        // プルダウン (selectボックス) - 非表示にするため作成しない
+        // ただし、カテゴリを手動で変更する手段をなくすため、代わりに`updateItemCategory`を介して更新する
+        // ユーザーが手動でカテゴリを選択したい場合は、このプルダウンを再表示する必要がある
+        // または、別のUI（モーダルなど）でカテゴリ編集機能を提供する
 
         // 削除ボタン
         const deleteButton = document.createElement('button');
@@ -298,11 +280,10 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
-        // 要素の追加順序: チェックボックス、入力エリア、プルダウン、ゴミ箱アイコン
+        // 要素の追加順序: チェックボックス、入力エリア、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
-        // itemDiv.appendChild(categoryIcon); // カテゴリアイコンを削除
         itemDiv.appendChild(input);
-        itemDiv.appendChild(categorySelect); // 新しい位置
+        // categorySelectは削除
         itemDiv.appendChild(deleteButton);
 
         return itemDiv;
@@ -334,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 入力エリアのテキストを更新
-    const updateItemText = (id, newText, categorySelectElement) => { // categoryIconElementを削除
+    const updateItemText = (id, newText) => { // categorySelectElementパラメータを削除
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
@@ -366,26 +347,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 現在のカテゴリと異なる場合のみ更新
                 if (item.category !== foundCategory) {
                     item.category = foundCategory;
-                    if (categorySelectElement) { // プルダウン要素があれば更新
-                        categorySelectElement.value = foundCategory;
-                    }
-                    // カテゴリアイコンの更新はサブタイトルに移動したのでここからは削除
+                    // プルダウン要素がないため、UI更新はonblur時のrenderTabContentsに任せる
                 }
             }
             saveItems(); // テキストとカテゴリの変更を保存
         }
     };
 
-    // 入力エリアのカテゴリを更新
+    // 入力エリアのカテゴリを更新 (手動でのカテゴリ変更手段がないため、ここでは使われないが残しておく)
     const updateItemCategory = (id, newCategory) => {
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
             item.category = newCategory;
             saveItems();
-            sortCurrentTabItems(); // カテゴリ変更後もソート
-            renderTabContents(); // 再レンダリングして順序を反映
-            updateTabContentDisplay(); // 高さも更新
+            sortCurrentTabItems();
+            renderTabContents();
+            updateTabContentDisplay();
         }
     };
 
