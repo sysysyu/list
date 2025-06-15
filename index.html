@@ -84,6 +84,21 @@
         </div>
     </div>
 
+    <!-- LLM提案表示モーダル -->
+    <div id="llmSuggestionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden modal-overlay">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md modal-content transform transition-all duration-300 scale-95 opacity-0">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">提案</h2>
+            <div id="llmSuggestionContent" class="mb-4 text-gray-700 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                <!-- LLMからの提案がここに表示されます -->
+                <p id="loadingMessage" class="text-center text-blue-500 font-semibold hidden">提案を生成中...</p>
+            </div>
+            <button id="applySuggestionBtn" class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition-colors mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                この提案を適用
+            </button>
+            <button id="closeLlmSuggestionModalBtn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-md hover:bg-gray-400 transition-colors">閉じる</button>
+        </div>
+    </div>
+
     <!-- Custom JavaScript -->
     <script src="script.js"></script>
 </body>
