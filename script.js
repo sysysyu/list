@@ -15,19 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
-    // LLM関連の要素
-    const llmSuggestionModal = document.getElementById('llmSuggestionModal');
-    const llmSuggestionContent = document.getElementById('llmSuggestionContent');
-    const applySuggestionBtn = document.getElementById('applySuggestionBtn');
-    const closeLlmSuggestionModalBtn = document.getElementById('closeLlmSuggestionModalBtn');
-    const loadingMessage = document.getElementById('loadingMessage');
+    // LLM関連の要素は削除されました
 
     let tabs = JSON.parse(localStorage.getItem('tabs')) || [{ id: 'default', name: 'デフォルト' }];
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
     let items = JSON.parse(localStorage.getItem('items')) || {}; // { tabId: [{ id, text, checked }, ...] }
     let history = JSON.parse(localStorage.getItem('history')) || []; // [{ id, text, tabId, timestamp }]
 
-    let currentLlmTargetInput = null; // LLM提案を適用する入力フィールドの参照を保持
+    // LLM提案を適用する入力フィールドの参照は不要になりました
 
     // 初期データを設定
     if (!items[activeTabId]) {
@@ -138,19 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         input.type = 'text';
         input.value = itemData.text;
         input.placeholder = 'ここにタスクを入力';
+        // tabindexを明示的に設定し、スマートフォンでの入力問題を改善
+        input.setAttribute('tabindex', '0'); 
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
 
-        // 提案ボタン (LLM機能)
-        const suggestButton = document.createElement('button');
-        suggestButton.className = 'p-2 text-blue-500 hover:text-blue-700 transition-colors rounded-full';
-        suggestButton.innerHTML = '<i class="fas fa-lightbulb text-lg"></i>'; // 電球アイコン
-        suggestButton.title = 'LLMにタスクのアイデアを提案してもらう';
-        suggestButton.onclick = () => {
-            currentLlmTargetInput = input; // 提案を適用する対象の入力フィールドを記憶
-            generateLlmSuggestion(itemData.text);
-        };
-
+        // 提案ボタン (LLM機能) は削除されました
 
         // 削除ボタン
         const deleteButton = document.createElement('button');
@@ -160,8 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         itemDiv.appendChild(checkbox);
         itemDiv.appendChild(input);
-        itemDiv.appendChild(suggestButton); // 提案ボタンを追加
-        itemDiv.appendChild(deleteButton);
+        itemDiv.appendChild(deleteButton); // 提案ボタンが削除されたため、削除ボタンの位置が変わる可能性あり
 
         return itemDiv;
     };
@@ -490,104 +477,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- LLM (Gemini API) 関連機能 ---
+    // --- LLM (Gemini API) 関連機能は削除されました ---
 
-    // Gemini API を呼び出す関数
-    const callGeminiAPI = async (prompt) => {
-        llmSuggestionContent.textContent = ''; // 前回の提案をクリア
-        loadingMessage.classList.remove('hidden'); // ローディングメッセージを表示
-        applySuggestionBtn.disabled = true; // 適用ボタンを無効化
-
-        let chatHistory = [];
-        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
-        const payload = { contents: chatHistory };
-        const apiKey = ""; // Canvas環境が自動的にAPIキーを提供します
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-
-            loadingMessage.classList.add('hidden'); // ローディングメッセージを非表示
-
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                const text = result.candidates[0].content.parts[0].text;
-                llmSuggestionContent.textContent = text;
-                applySuggestionBtn.disabled = false; // 適用ボタンを有効化
-                return text;
-            } else {
-                llmSuggestionContent.textContent = '提案を取得できませんでした。';
-                console.error('Gemini API: 予期しない応答構造', result);
-                return null;
-            }
-        } catch (error) {
-            loadingMessage.classList.add('hidden'); // ローディングメッセージを非表示
-            llmSuggestionContent.textContent = '提案の取得中にエラーが発生しました。';
-            console.error('Gemini API エラー:', error);
-            return null;
-        }
-    };
-
-    // LLMにタスクのアイデアを生成させる
-    const generateLlmSuggestion = async (currentTaskText) => {
-        showModal(llmSuggestionModal);
-
-        const currentTabName = tabs.find(tab => tab.id === activeTabId)?.name || '未定義のタブ';
-        const existingTasks = items[activeTabId]
-            .filter(item => item.text.trim() !== '' && item.id !== (currentLlmTargetInput ? currentLlmTargetInput.parentElement.id.replace('item-', '') : null))
-            .map(item => `- ${item.text}`).join('\n');
-
-        let prompt = `現在のタブは「${currentTabName}」です。`;
-        if (existingTasks) {
-            prompt += `\n既存のタスクは以下の通りです:\n${existingTasks}\n`;
-        }
-        if (currentTaskText.trim() !== '') {
-            prompt += `現在の入力内容が「${currentTaskText}」です。`;
-            prompt += `この入力内容を元に、より具体的な、または関連するタスクのアイデアを一つ提案してください。提案は直接タスクの内容として利用できる形式でお願いします。`;
-        } else {
-            prompt += `このタブの目的や既存のタスクに関連する、新しいタスクのアイデアを一つ提案してください。提案は直接タスクの内容として利用できる形式でお願いします。`;
-        }
-        prompt += `箇条書きや複雑な装飾は不要です。簡潔な1つのタスクを提案してください。`;
-
-
-        const suggestion = await callGeminiAPI(prompt);
-        if (suggestion) {
-            // モーダルに提案が表示されるので、特にここで何かする必要はない
-        }
-    };
-
-    // LLM提案を適用ボタンのクリックイベント
-    applySuggestionBtn.onclick = () => {
-        if (currentLlmTargetInput && llmSuggestionContent.textContent) {
-            currentLlmTargetInput.value = llmSuggestionContent.textContent.trim();
-            // 適用後、入力エリアのデータも更新
-            const itemId = currentLlmTargetInput.parentElement.id.replace('item-', '');
-            updateItemText(itemId, currentLlmTargetInput.value);
-        }
-        hideModal(llmSuggestionModal);
-    };
-
-    // LLM提案モーダルを閉じる
-    closeLlmSuggestionModalBtn.onclick = () => hideModal(llmSuggestionModal);
-    llmSuggestionModal.addEventListener('click', (e) => {
-        if (e.target === llmSuggestionModal) {
-            hideModal(llmSuggestionModal);
-        }
-    });
 
     // --- タブのスライド切り替え機能 (タッチイベント) ---
     let startX = 0;
     let currentTranslateX = 0;
     let isDragging = false;
+    let isTouchedOnInteractiveElement = false; // 新しいフラグ
 
     tabContentWrapper.addEventListener('touchstart', (e) => {
+        // タッチが入力フィールドやボタン上で開始された場合、スライド処理を無効化
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+            isTouchedOnInteractiveElement = true;
+            return;
+        }
+        isTouchedOnInteractiveElement = false;
+
         startX = e.touches[0].clientX;
         currentTranslateX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
         isDragging = true;
@@ -595,14 +501,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     tabContentWrapper.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
+        if (!isDragging || isTouchedOnInteractiveElement) return; // 新しいフラグをチェック
         const currentX = e.touches[0].clientX;
         const diffX = currentX - startX;
         tabContentWrapper.style.transform = `translateX(${currentTranslateX + (diffX / window.innerWidth) * 100}%)`;
     });
 
     tabContentWrapper.addEventListener('touchend', () => {
-        if (!isDragging) return;
+        if (!isDragging || isTouchedOnInteractiveElement) return; // 新しいフラグをチェック
         isDragging = false;
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // ドラッグ終了後にトランジションを有効化
 
@@ -630,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
             }
         }, 300); // 切り替えアニメーション後に高さを調整
-
+        isTouchedOnInteractiveElement = false; // リセット
     });
 
     // ウィンドウのリサイズ時にコンテンツの高さを調整
