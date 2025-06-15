@@ -40,6 +40,12 @@ body {
     z-index: 100; /* モーダルを最も高く */
 }
 
+/* ヘッダーの背景色を固定 */
+header {
+    background-color: #e2d8c4 !important; /* 背景色を固定 */
+    background-image: none !important; /* グラデーションを無効化 */
+}
+
 /* カスタムタブのスタイル */
 .tab-container-compact {
     display: flex; /* Flexboxを使用してタブを横並びにする */
@@ -52,8 +58,8 @@ body {
 .tab-button {
     position: relative;
     padding: 0.75rem 1.25rem; /* コンパクトなパディング */
-    background-color: rgba(255, 255, 255, 0.2); /* 非アクティブなタブの背景色 */
-    color: white;
+    background-color: #ffffff; /* タブの背景色を白に固定 */
+    color: #c8b69e; /* タブの文字色を固定 */
     font-weight: 500;
     border: none;
     border-top-left-radius: 0.5rem; /* 上左右の角を丸くする */
@@ -72,12 +78,12 @@ body {
 }
 
 .tab-button:hover {
-    background-color: rgba(255, 255, 255, 0.3); /* ホバー時の背景色 */
+    background-color: #f5f5f5; /* ホバー時の背景色を少し暗く */
 }
 
 .tab-button.active-tab {
-    background-color: var(--tab-bg-color, #A7C7E7); /* JavaScriptで設定される色 */
-    color: white;
+    background-color: #ffffff; /* アクティブなタブの背景色も白に固定 */
+    color: #c8b69e; /* アクティブなタブの文字色も固定 */
     z-index: 2; /* アクティブなタブを前面に表示 */
     box-shadow: 0 -3px 8px rgba(0,0,0,0.2); /* アクティブ時の影を強調 */
 }
@@ -90,7 +96,7 @@ body {
     left: 0;
     width: 100%;
     height: 3px; /* アンダーラインの太さ */
-    background-color: white; /* アンダーラインの色 */
+    background-color: #c8b69e; /* アンダーラインの色を#c8b69eに固定 */
     border-radius: 1.5px; /* 角を丸くする */
     transform: translateY(3px); /* タブの少し下に表示 */
 }
@@ -100,11 +106,18 @@ body {
     margin-right: 0;
 }
 
-/* Chromeのような斜めカットの視覚効果は、複雑なCSSやSVGが必要なため、
-   ここではシンプルな丸角の矩形とマージンで「繋がった」感を表現します。
-   より高度なデザインが必要な場合は、追加のCSS調整が必要です。 */
-
 /* メインコンテンツの背景色をデフォルトのパステルカラーにする */
 main {
-    background-color: #f0f2f5; /* デフォルトの背景色、必要に応じて変更 */
+    background-color: #f0f2f5; /* リストアイテムの背景色 */
+}
+
+/* ＋ボタンのスタイル */
+#addInputAreaBtn {
+    background-color: #c8b69e !important; /* 背景色を固定 */
+    color: #ffffff !important; /* 文字色を白に固定 */
+}
+
+/* タブ設定、履歴ボタンの色も変更 */
+#tabSettingsBtn, #historyListBtn {
+    color: #c8b69e !important; /* アイコンの色を固定 */
 }
