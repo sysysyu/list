@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContentWrapper = document.getElementById('tabContentWrapper');
     const addInputAreaBtn = document.getElementById('addInputAreaBtn');
     const tabSettingsBtn = document.getElementById('tabSettingsBtn');
-    const historyListBtn = document.getElementById('historyListBtn'); // Fix: Removed redundant document =
+    const historyListBtn = document.getElementById('historyListBtn');
     const tabSettingsModal = document.getElementById('tabSettingsModal');
     const closeTabSettingsModalBtn = document.getElementById('closeTabSettingsModalBtn');
     const tabsList = document.getElementById('tabsList');
@@ -61,6 +61,24 @@ document.addEventListener('DOMContentLoaded', () => {
         '医薬品',
         'その他'
     ];
+
+    // カテゴリ自動設定のためのキーワードマッピング
+    const categoryKeywords = {
+        '野菜': ['じゃがいも', 'ジャガイモ', 'にんじん', 'たまねぎ', 'レタス', 'きゅうり', 'なす', 'ピーマン', 'キャベツ', 'ほうれん草', 'ブロッコリー', 'トマト', '大根', 'ごぼう', '蓮根', '玉ねぎ', '茄子'],
+        '果物': ['りんご', 'バナナ', 'みかん', 'いちご', 'ぶどう', 'もも', 'なし', 'メロン', 'スイカ', 'キウイ', 'オレンジ', 'レモン'],
+        '肉・肉加工品': ['鶏肉', '豚肉', '牛肉', 'ひき肉', 'ベーコン', 'ハム', 'ソーセージ', '鶏もも', '豚バラ', '牛すじ'],
+        '海鮮': ['魚', '鮭', 'マグロ', 'エビ', 'カニ', 'イカ', 'タコ', 'あさり', 'ホタテ', '刺身', 'まぐろ', 'えび', 'かに', 'いか', 'たこ'],
+        '米・パン・種類': ['米', 'ごはん', 'パン', '食パン', '菓子パン', 'うどん', 'そば', 'パスタ', 'ラーメン', 'もち', '蕎麦', '饂飩'],
+        '飲料・お酒': ['水', 'お茶', '牛乳', 'ジュース', 'コーヒー', '紅茶', 'ビール', 'ワイン', '日本酒', '焼酎', '烏龍茶', '緑茶', '麦茶'],
+        'お菓子': ['チョコレート', 'クッキー', 'ポテトチップス', 'スナック菓子', 'アイス', 'ケーキ', 'プリン', 'ゼリー', 'せんべい', 'チョコ', 'アイスクリーム', 'ビスケット'],
+        '卵・チーズ・乳製品': ['卵', 'たまご', 'チーズ', 'ヨーグルト', 'バター', '牛乳', '生クリーム'],
+        '冷凍食品': ['冷凍うどん', '冷凍餃子', '冷凍野菜', '冷凍ごはん', '冷凍からあげ', '冷凍食品'],
+        '豆腐・納豆': ['豆腐', '納豆', '油揚げ', '厚揚げ'],
+        '缶詰・瓶詰め': ['ツナ缶', 'サバ缶', 'トマト缶', 'ジャム', 'はちみつ', '瓶詰め', '缶詰', '魚缶'],
+        '調味料': ['醤油', '塩', '砂糖', '酢', '油', 'みりん', '料理酒', 'ケチャップ', 'マヨネーズ', '味噌', 'しょうゆ', 'しお', 'さとう', 'お酢', 'みそ'],
+        '日用品': ['ティッシュ', 'トイレットペーパー', '洗剤', 'シャンプー', 'リンス', '歯ブラシ', '石鹸', 'ゴミ袋', 'ラップ', 'アルミホイル', '電池', '洗顔', '歯磨き粉'],
+        '医薬品': ['風邪薬', '絆創膏', '胃薬', 'マスク', '鎮痛剤', '消毒液'],
+    };
 
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
@@ -128,35 +146,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let lastCategory = null;
-            let currentCategoryGroup = null;
-
+            
             items[tab.id].forEach(item => {
                 const itemCategory = item.category || '未分類';
 
                 // カテゴリが変わった場合、または最初のアイテムの場合に新しいカテゴリサブタイトルを作成
+                // かつ、そのカテゴリのアイテムが少なくとも1つ存在する場合にのみ表示
                 if (itemCategory !== lastCategory) {
-                    // 古いカテゴリグループがあれば、スペースを追加 (必要であれば)
-                    if (currentCategoryGroup && currentCategoryGroup.children.length > 0) {
-                        // オプション: カテゴリグループ間に明確な間隔を追加
-                        const spacer = document.createElement('div');
-                        spacer.className = 'h-4'; // スペーサーの高さ
-                        tabContentDiv.appendChild(spacer);
+                    const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
+                    if (categoryItemsExist) {
+                        const categorySubtitle = document.createElement('h4');
+                        // サブタイトルにTailwindクラスを適用
+                        categorySubtitle.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4'; // 上マージンを増やして区切りを明確に
+                        categorySubtitle.textContent = itemCategory;
+                        tabContentDiv.appendChild(categorySubtitle);
+                        lastCategory = itemCategory;
                     }
-
-                    currentCategoryGroup = document.createElement('div');
-                    currentCategoryGroup.className = 'category-group'; // カテゴリグループ用のラッパー
-
-                    const categorySubtitle = document.createElement('h4');
-                    // サブタイトルにTailwindクラスを適用
-                    categorySubtitle.className = 'font-semibold text-lg text-gray-700 mt-2 mb-2 ml-4'; 
-                    categorySubtitle.textContent = itemCategory;
-                    currentCategoryGroup.appendChild(categorySubtitle);
-                    tabContentDiv.appendChild(currentCategoryGroup);
-                    lastCategory = itemCategory;
                 }
 
-                // アイテムを現在のカテゴリグループに追加
-                currentCategoryGroup.appendChild(createInputArea(item));
+                // アイテムをタブコンテンツに直接追加
+                tabContentDiv.appendChild(createInputArea(item));
             });
             tabContentWrapper.appendChild(tabContentDiv);
         });
@@ -283,7 +292,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = currentItems.find(item => item.id === id);
         if (item) {
             item.text = newText;
-            saveItems();
+
+            // カテゴリの自動設定ロジック
+            const normalizedInput = katakanaToHiragana(newText.toLowerCase());
+            let foundCategory = '未分類'; // デフォルト
+
+            // より具体的なキーワードからチェック
+            let matched = false;
+            for (const category of categories) { // カテゴリ配列の順序で優先度を付ける
+                if (category === '未分類' || category === 'その他') continue; // 未分類とその他はスキップ
+
+                const keywords = categoryKeywords[category];
+                if (keywords) {
+                    for (const keyword of keywords) {
+                        if (normalizedInput.includes(katakanaToHiragana(keyword).toLowerCase())) {
+                            foundCategory = category;
+                            matched = true;
+                            break; // 一致したらループを抜ける
+                        }
+                    }
+                }
+                if (matched) break;
+            }
+
+            // 現在のカテゴリと異なる場合のみ更新
+            if (item.category !== foundCategory) {
+                item.category = foundCategory;
+                saveItems(); // カテゴリ変更を保存
+                // カテゴリが変更された場合は、プルダウンの表示も更新するために再レンダリングが必要
+                // そしてソートも必要
+                sortCurrentTabItems(); // ソート
+                renderTabContents(); // 再レンダリング
+                updateTabContentDisplay(); // 高さ調整
+            } else {
+                saveItems(); // テキストのみの変更を保存
+            }
         }
     };
 
