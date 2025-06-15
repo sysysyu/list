@@ -282,23 +282,28 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTabContentDisplay();
         };
 
-        // カラー選択プルダウンをゴミ箱の左に配置
-        const colorSelect = document.createElement('select');
-        colorSelect.className = 'p-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:ring-blue-500 focus:border-blue-500 flex-shrink-0';
-        
-        // パステルカラーパレットからオプションを生成
-        for (const colorName in pastelColors) {
-            const option = document.createElement('option');
-            option.value = pastelColors[colorName]; // HEXコードを値に
-            option.textContent = colorName; // 色の名前をテキストに
-            option.style.backgroundColor = pastelColors[colorName]; // オプションの背景色
-            option.style.color = getContrastColor(pastelColors[colorName]); // 文字色をコントラストを考慮して設定
-            colorSelect.appendChild(option);
-        }
-        // itemDataにitemColorがあればそれを設定、なければデフォルトの白を選択
-        colorSelect.value = itemData.itemColor || pastelColors['白'];
-        colorSelect.onchange = (e) => updateItemColor(itemData.id, e.target.value);
+        // カラーアイコン
+        const colorIcon = document.createElement('div');
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
+        colorIcon.style.backgroundColor = itemData.itemColor || pastelColors['白'];
+        colorIcon.onclick = () => {
+            const currentColorValue = itemData.itemColor || pastelColors['白'];
+            const allColors = Object.values(pastelColors);
+            const currentIndex = allColors.indexOf(currentColorValue);
+            const nextIndex = (currentIndex + 1) % allColors.length;
+            const nextColor = allColors[nextIndex];
+            
+            itemData.itemColor = nextColor; // データを直接更新
+            saveItems(); // 変更を保存
 
+            // 即座にアイコンの色を更新 (見た目のフィードバック)
+            colorIcon.style.backgroundColor = nextColor;
+            // 親要素 (itemDiv) の背景色も更新
+            itemDiv.style.backgroundColor = nextColor;
+
+            // 色変更はソートには影響しないので、リスト全体の再レンダリングは不要
+            // ただし、タスクアイテムの背景色が即座に反映されるようにスタイルを更新
+        };
 
         // 削除ボタン
         const deleteButton = document.createElement('button');
@@ -306,10 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
-        // 要素の追加順序: チェックボックス、入力エリア、カラー選択プルダウン、ゴミ箱アイコン
+        // 要素の追加順序: チェックボックス、入力エリア、カラーアイコン、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
         itemDiv.appendChild(input);
-        itemDiv.appendChild(colorSelect); // 新しい位置
+        itemDiv.appendChild(colorIcon); // カラーアイコンを追加
         itemDiv.appendChild(deleteButton);
 
         return itemDiv;
@@ -386,19 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveItems();
             sortCurrentTabItems();
             renderTabContents();
-            updateTabContentDisplay();
-        }
-    };
-
-    // アイテムのカラーを更新
-    const updateItemColor = (id, newColor) => {
-        const currentItems = items[activeTabId];
-        const item = currentItems.find(item => item.id === id);
-        if (item) {
-            item.itemColor = newColor;
-            saveItems();
-            // 色変更はソートには影響しないが、UIを即座に更新するために再レンダリング
-            renderTabContents(); 
             updateTabContentDisplay();
         }
     };
