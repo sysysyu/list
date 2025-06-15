@@ -695,7 +695,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         const allInputs = tabContentWrapper.querySelectorAll(`#tab-content-${activeTabId} input[type="text"]`);
                         if (allInputs.length > 0) {
-                            allInputs[allInputs.length - 1].focus(); // 最後に追加された入力フィールドにフォーカス
+                            // 最後の要素にフォーカスを当てる
+                            allInputs[allInputs.length - 1].focus(); 
                         }
                     }, 100); // 新しい要素がDOMに追加されるのを待つための短い遅延
                 }
@@ -703,6 +704,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // フォーカスアウト時にソートと再レンダリングを実行
         input.onblur = () => {
+            if (input.value.trim() === '') {
+                deleteInputArea(itemData.id);
+            }
             sortCurrentTabItems();
             renderTabContents();
             updateTabContentDisplay();
@@ -959,19 +963,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     addTabBtn.onclick = () => {
-        const newTabName = newTabNameInput.value.trim();
-        if (newTabName) {
-            const newTab = { id: Date.now().toString(), name: newTabName, tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor };
-            tabs.push(newTab);
-            items[newTab.id] = [];
-            saveTabs();
-            saveItems();
-            newTabNameInput.value = '';
-            renderTabs();
-            renderTabContents();
-            renderTabSettings();
-            switchTab(newTab.id);
+        const newItem = {
+            id: Date.now().toString(),
+            text: '',
+            checked: false,
+            category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
+            itemColor: duskyColors['オフホワイト'] // 新しいアイテムにデフォルト色を設定
+        };
+        if (!items[activeTabId]) {
+            items[activeTabId] = [];
         }
+        items[activeTabId].push(newItem);
+        sortCurrentTabItems(); // 新規追加後もソート
+        saveItems();
+        renderTabContents();
+        updateTabContentDisplay();
+        setTimeout(() => {
+            const newItemElement = document.getElementById(`item-${newItem.id}`);
+            if (newItemElement) {
+                newItemElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }, 100);
     };
 
     const deleteTab = (id) => {
