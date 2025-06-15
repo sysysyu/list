@@ -17,7 +17,101 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // LLM関連の要素は削除されました
 
-    let tabs = JSON.parse(localStorage.getItem('tabs')) || [{ id: 'default', name: 'デフォルト' }];
+    // Utility functions for color conversion and lightening
+    // HEX色コードをHSL形式に変換する関数
+    function hexToHsl(hex) {
+        let r = 0, g = 0, b = 0;
+        // 3桁のHEXを処理 (例: #F00 -> #FF0000)
+        if (hex.length === 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) { // 6桁のHEXを処理
+            r = parseInt(hex.substring(1, 3), 16);
+            g = parseInt(hex.substring(3, 5), 16);
+            b = parseInt(hex.substring(5, 7), 16);
+        }
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0; // 無彩色
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        return [h * 360, s * 100, l * 100]; // H, S, Lをパーセンテージで返す
+    }
+
+    // HSL形式をHEX色コードに変換する関数
+    function hslToHex(h, s, l) {
+        h /= 360;
+        s /= 100;
+        l /= 100;
+        let r, g, b;
+
+        if (s === 0) {
+            r = g = b = l; // 無彩色
+        } else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1 / 3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1 / 3);
+        }
+
+        const toHex = x => {
+            const hex = Math.round(x * 255).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        };
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    // HEX色を明るくする関数
+    function lightenHexColor(hex, percent) {
+        const [h, s, l] = hexToHsl(hex);
+        let newL = Math.min(100, l + percent); // 明度を増やし、最大100%
+        // パステル調を保つために、最低明度を保証
+        if (newL < 70) newL = 70; // 70%より明るくなるように調整 (より明るいパステル)
+        return hslToHex(h, s, newL);
+    }
+
+    // デフォルトのパステル調の色を設定
+    // 初期タブの色を設定（HSLで明度が高めの色から開始）
+    const initialDefaultTabColor = '#A7C7E7'; // パステルブルーのHEX
+    const initialDefaultListColor = lightenHexColor(initialDefaultTabColor, 20); // タブより20%明るく
+
+    let tabs = JSON.parse(localStorage.getItem('tabs')) || [{ id: 'default', name: 'デフォルト', tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor }];
+    
+    // 既存のタブデータに色プロパティがない場合、デフォルト値を設定
+    tabs = tabs.map(tab => {
+        if (!tab.tabBgColor) {
+            tab.tabBgColor = initialDefaultTabColor;
+            tab.listBgColor = initialDefaultListColor;
+        }
+        return tab;
+    });
+
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
     let items = JSON.parse(localStorage.getItem('items')) || {}; // { tabId: [{ id, text, checked }, ...] }
     let history = JSON.parse(localStorage.getItem('history')) || []; // [{ id, text, tabId, timestamp }]
@@ -58,11 +152,19 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const button = document.createElement('button');
             button.id = `tab-${tab.id}`;
-            button.className = `px-4 py-2 mx-1 rounded-full text-sm font-medium transition-all duration-200 ease-in-out ${
-                tab.id === activeTabId ? 'bg-white text-blue-700 shadow-md' : 'text-white hover:bg-white hover:bg-opacity-20'
-            }`;
+            button.className = `px-4 py-2 mx-1 rounded-full text-sm font-medium transition-all duration-200 ease-in-out`;
             button.textContent = tab.name;
             button.onclick = () => switchTab(tab.id);
+
+            if (tab.id === activeTabId) {
+                button.classList.add('text-white', 'shadow-md');
+                button.style.backgroundColor = tab.tabBgColor; // アクティブなタブの背景色を適用
+            } else {
+                button.classList.add('text-white', 'hover:bg-white', 'hover:bg-opacity-20');
+                // 非アクティブなタブも少し透明度のある色にするか、白に戻すか検討
+                // 現在はTailwindのopacityで対応。ここでは白に戻す。
+                button.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; // 薄い白で非アクティブを示す
+            }
             tabContainer.appendChild(button);
         });
         // アクティブなタブが画面中央に表示されるようにスクロール
@@ -112,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeTabId = id;
         saveActiveTab();
         renderTabs();
+        renderTabContents(); // タブ切り替え時にもアイテムの背景色を正しく適用するために再レンダリング
         updateTabContentDisplay();
     };
 
@@ -119,7 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        itemDiv.className = 'flex items-center bg-white p-4 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02]';
+        itemDiv.className = 'flex items-center p-4 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02]';
+        
+        // 現在のアクティブタブのlistBgColorを適用
+        const activeTabObj = tabs.find(t => t.id === activeTabId);
+        itemDiv.style.backgroundColor = activeTabObj ? activeTabObj.listBgColor : '#ffffff'; // Fallback to white
 
         // チェックマーク (チェックボックス)
         const checkbox = document.createElement('input');
@@ -241,6 +348,21 @@ document.addEventListener('DOMContentLoaded', () => {
             tabNameSpan.textContent = tab.name;
             tabNameSpan.className = 'flex-grow font-medium';
 
+            // 色選択用のinput[type="color"]
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.className = 'ml-3 w-8 h-8 rounded-full border border-gray-300 cursor-pointer';
+            colorInput.value = tab.tabBgColor; // 現在の色を設定
+            colorInput.title = 'タブの背景色を選択';
+            colorInput.onchange = (e) => {
+                const newTabColor = e.target.value;
+                tab.tabBgColor = newTabColor;
+                tab.listBgColor = lightenHexColor(newTabColor, 20); // タブの色からリスト色を生成（20%明るく）
+                saveTabs();
+                renderTabs(); // メインのタブ表示を更新
+                renderTabContents(); // リストアイテムの背景色を更新
+            };
+
             // 削除ボタン
             const deleteTabButton = document.createElement('button');
             deleteTabButton.className = 'ml-3 p-1 text-red-500 hover:text-red-700 transition-colors rounded-full';
@@ -254,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
             moveHandle.draggable = true;
 
             tabItem.appendChild(tabNameSpan);
+            tabItem.appendChild(colorInput); // カラーピッカーを追加
             tabItem.appendChild(deleteTabButton);
             tabItem.appendChild(moveHandle);
             tabsList.appendChild(tabItem);
@@ -338,7 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
     addTabBtn.onclick = () => {
         const newTabName = newTabNameInput.value.trim();
         if (newTabName) {
-            const newTab = { id: Date.now().toString(), name: newTabName };
+            // 新しいタブにデフォルトのパステル色を適用
+            const newTab = { id: Date.now().toString(), name: newTabName, tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor };
             tabs.push(newTab);
             items[newTab.id] = []; // 新しいタブのアイテムを初期化
             saveTabs();
