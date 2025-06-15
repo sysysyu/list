@@ -63,9 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // カテゴリ自動設定のためのキーワードマッピング
-    // このデータは、通常は外部ファイル（JSONなど）で管理されますが、
-    // この環境では簡略化のためJavaScriptコード内に直接記述しています。
-    // キーワードを増やしたい場合は、以下のオブジェクトを直接編集してください。
     const categoryKeywords = {
         '野菜': ['じゃがいも', 'ジャガイモ', 'にんじん', 'たまねぎ', 'レタス', 'きゅうり', 'なす', 'ピーマン', 'キャベツ', 'ほうれん草', 'ブロッコリー', 'トマト', '大根', 'ごぼう', '蓮根', '玉ねぎ', '茄子', 'アボカド', 'きのこ', 'しいたけ', 'エリンギ', '舞茸', 'えのき', 'パセリ', 'セロリ', 'ねぎ', '長ネギ', 'みつば', '小松菜', '水菜', 'チンゲン菜', 'アスパラガス', 'カリフラワー', '白菜', 'もやし', 'かいわれ', 'スプラウト', 'ゴボウ', 'ダイコン', 'ハクサイ'],
         '果物': ['りんご', 'バナナ', 'みかん', 'いちご', 'ぶどう', 'もも', 'なし', 'メロン', 'スイカ', 'キウイ', 'オレンジ', 'レモン', 'グレープフルーツ', 'パイナップル', 'マンゴー', 'アボカド', 'さくらんぼ', '柿', '梨', '葡萄', '苺', '桃'],
@@ -102,6 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
         '日用品': 'fas fa-soap text-blue-400',
         '医薬品': 'fas fa-pills text-red-600',
         'その他': 'fas fa-ellipsis-h text-gray-500'
+    };
+
+    // パステル調のカラーパレット
+    const pastelColors = {
+        '白': '#ffffff', // デフォルト色
+        'パステルピンク': '#FFD1DC',
+        'パステルブルー': '#AEC6CF',
+        'パステルグリーン': '#77DD77',
+        'パステルイエロー': '#FDFD96',
+        'パステルパープル': '#B39EB5',
+        'パステルオレンジ': '#FFB347',
+        'パステルグレー': '#D3D3D3',
+        'ミントグリーン': '#98FB98',
+        'ラベンダー': '#E6E6FA',
+        'ピーチ': '#FFDAB9',
+        'スカイブルー': '#87CEEB'
     };
 
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
@@ -244,8 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         itemDiv.id = `item-${itemData.id}`;
         itemDiv.className = 'flex items-center px-4 py-3 rounded-xl shadow-md space-x-3 transition-all duration-300 transform hover:scale-[1.02] mx-4';
         
-        // リストアイテムの背景色を白に固定
-        itemDiv.style.backgroundColor = '#ffffff'; 
+        // リストアイテムの背景色を、アイテムのitemColorに基づいて設定
+        itemDiv.style.backgroundColor = itemData.itemColor || pastelColors['白']; 
 
         // チェックマーク (チェックボックス)
         const checkbox = document.createElement('input');
@@ -269,10 +282,23 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTabContentDisplay();
         };
 
-        // プルダウン (selectボックス) - 非表示にするため作成しない
-        // ただし、カテゴリを手動で変更する手段をなくすため、代わりに`updateItemCategory`を介して更新する
-        // ユーザーが手動でカテゴリを選択したい場合は、このプルダウンを再表示する必要がある
-        // または、別のUI（モーダルなど）でカテゴリ編集機能を提供する
+        // カラー選択プルダウンをゴミ箱の左に配置
+        const colorSelect = document.createElement('select');
+        colorSelect.className = 'p-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:ring-blue-500 focus:border-blue-500 flex-shrink-0';
+        
+        // パステルカラーパレットからオプションを生成
+        for (const colorName in pastelColors) {
+            const option = document.createElement('option');
+            option.value = pastelColors[colorName]; // HEXコードを値に
+            option.textContent = colorName; // 色の名前をテキストに
+            option.style.backgroundColor = pastelColors[colorName]; // オプションの背景色
+            option.style.color = getContrastColor(pastelColors[colorName]); // 文字色をコントラストを考慮して設定
+            colorSelect.appendChild(option);
+        }
+        // itemDataにitemColorがあればそれを設定、なければデフォルトの白を選択
+        colorSelect.value = itemData.itemColor || pastelColors['白'];
+        colorSelect.onchange = (e) => updateItemColor(itemData.id, e.target.value);
+
 
         // 削除ボタン
         const deleteButton = document.createElement('button');
@@ -280,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
-        // 要素の追加順序: チェックボックス、入力エリア、ゴミ箱アイコン
+        // 要素の追加順序: チェックボックス、入力エリア、カラー選択プルダウン、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
         itemDiv.appendChild(input);
-        // categorySelectは削除
+        itemDiv.appendChild(colorSelect); // 新しい位置
         itemDiv.appendChild(deleteButton);
 
         return itemDiv;
@@ -315,17 +341,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 入力エリアのテキストを更新
-    const updateItemText = (id, newText) => { // categorySelectElementパラメータを削除
+    const updateItemText = (id, newText) => {
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
-            const oldText = item.text; // 古いテキストを保持
+            const oldText = item.text;
             item.text = newText;
 
-            // テキストが変更された場合のみカテゴリ自動設定ロジックを実行
             if (oldText !== newText) {
                 const normalizedInput = katakanaToHiragana(newText.toLowerCase());
-                let foundCategory = '未分類'; // デフォルト
+                let foundCategory = '未分類';
 
                 let matched = false;
                 for (const category of categories) {
@@ -344,10 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (matched) break;
                 }
 
-                // 現在のカテゴリと異なる場合のみ更新
                 if (item.category !== foundCategory) {
                     item.category = foundCategory;
-                    // プルダウン要素がないため、UI更新はonblur時のrenderTabContentsに任せる
                 }
             }
             saveItems(); // テキストとカテゴリの変更を保存
@@ -363,6 +386,19 @@ document.addEventListener('DOMContentLoaded', () => {
             saveItems();
             sortCurrentTabItems();
             renderTabContents();
+            updateTabContentDisplay();
+        }
+    };
+
+    // アイテムのカラーを更新
+    const updateItemColor = (id, newColor) => {
+        const currentItems = items[activeTabId];
+        const item = currentItems.find(item => item.id === id);
+        if (item) {
+            item.itemColor = newColor;
+            saveItems();
+            // 色変更はソートには影響しないが、UIを即座に更新するために再レンダリング
+            renderTabContents(); 
             updateTabContentDisplay();
         }
     };
@@ -388,7 +424,8 @@ document.addEventListener('DOMContentLoaded', () => {
             id: Date.now().toString(),
             text: '',
             checked: false,
-            category: '未分類' // 新しいアイテムにデフォルトカテゴリを設定
+            category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
+            itemColor: pastelColors['白'] // 新しいアイテムにデフォルト色を設定
         };
         if (!items[activeTabId]) {
             items[activeTabId] = [];
@@ -552,6 +589,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return String.fromCharCode(match.charCodeAt(0) - 0x60);
         });
     }
+
+    // HEX色コードからRGBを抽出し、輝度を計算して適切なコントラストの文字色（白または黒）を返す関数
+    function getContrastColor(hexcolor) {
+        const r = parseInt(hexcolor.substr(1, 2), 16);
+        const g = parseInt(hexcolor.substr(3, 2), 16);
+        const b = parseInt(hexcolor.substr(5, 2), 16);
+        const y = (r * 299 + g * 587 + b * 114) / 1000;
+        return (y >= 128) ? 'black' : 'white';
+    }
+
 
     const renderHistoryList = () => {
         historyTabFilter.innerHTML = '<option value="all">全てのタブ</option>';
