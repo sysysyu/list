@@ -447,17 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const duskyColorValues = Object.values(duskyColors); // 色のHEX値の配列
 
-    // Helper to get the canonical name for a given text
-    const getCanonicalName = (text) => {
-        const normalizedText = katakanaToHiragana(text || '').toLowerCase(); // null/undefined対策と小文字化
-        // canonicalNamesMapはvariant to canonicalなので、直接参照
-        if (canonicalNamesMap[normalizedText]) {
-            return canonicalNamesMap[normalizedText];
-        }
-        // マップに見つからなければ、正規化されたテキスト自体を返す
-        return normalizedText;
-    };
-
 
     // アプリケーション起動時に全てのタブのアイテムをソートしておく
     Object.keys(items).forEach(tabId => {
@@ -518,6 +507,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContentWrapper.style.display = 'flex';
         tabContentWrapper.style.width = `${tabs.length * 100}%`; // Each tab is 100% of the viewport width effectively
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Ensure smooth transition
+        tabContentWrapper.style.overflow = 'hidden'; // Ensure content outside current view is hidden horizontally
+        tabContentWrapper.style.position = 'relative'; // For absolute positioning of children if needed, good practice
+        tabContentWrapper.style.height = 'auto'; // Will be set by updateTabContentDisplay
 
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
@@ -705,15 +697,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     deleteInputArea(itemData.id);
                 } else {
                     // 入力エリアにテキストがある場合は新しいリストアイテムを追加
-                    addInputAreaBtn.click(); // +ボタンをプログラム的にクリック
-                    // 追加された新しい入力エリアにフォーカスを移動
-                    setTimeout(() => {
-                        const allInputs = tabContentWrapper.querySelectorAll(`#tab-content-${activeTabId} input[type="text"]`);
-                        if (allInputs.length > 0) {
-                            // 最後の要素にフォーカスを当てる
-                            allInputs[allInputs.length - 1].focus(); 
-                        }
-                    }, 100); // 新しい要素がDOMに追加されるのを待つための短い遅延
+                    const newItem = {
+                        id: Date.now().toString(),
+                        text: '',
+                        checked: false,
+                        category: '未分類',
+                        itemColor: duskyColors['オフホワイト']
+                    };
+                    if (!items[activeTabId]) {
+                        items[activeTabId] = [];
+                    }
+                    items[activeTabId].push(newItem);
+                    sortCurrentTabItems();
+                    saveItems();
+                    renderTabContents(); // DOMを再構築
+
+                    // 新しく追加された入力エリアにフォーカスを当てる
+                    const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
+                    if (newlyAddedInput) {
+                        newlyAddedInput.focus();
+                        newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
                 }
             }
         });
@@ -859,12 +863,13 @@ document.addEventListener('DOMContentLoaded', () => {
         saveItems();
         renderTabContents();
         updateTabContentDisplay();
-        setTimeout(() => {
-            const newItemElement = document.getElementById(`item-${newItem.id}`);
-            if (newItemElement) {
-                newItemElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }
-        }, 100);
+        
+        // 新しく追加された入力エリアにフォーカスを当てる
+        const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
+        if (newlyAddedInput) {
+            newlyAddedInput.focus();
+            newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     };
 
     const renderTabSettings = () => {
