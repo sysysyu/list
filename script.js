@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContentWrapper = document.getElementById('tabContentWrapper');
     const addInputAreaBtn = document.getElementById('addInputAreaBtn');
     const tabSettingsBtn = document.getElementById('tabSettingsBtn');
-    const historyListBtn = document = document.getElementById('historyListBtn');
+    const historyListBtn = document.getElementById('historyListBtn'); // Fix: Removed redundant document =
     const tabSettingsModal = document.getElementById('tabSettingsModal');
     const closeTabSettingsModalBtn = document.getElementById('closeTabSettingsModalBtn');
     const tabsList = document.getElementById('tabsList');
@@ -127,8 +127,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 items[tab.id] = [];
             }
 
+            let lastCategory = null;
+            let currentCategoryGroup = null;
+
             items[tab.id].forEach(item => {
-                tabContentDiv.appendChild(createInputArea(item));
+                const itemCategory = item.category || '未分類';
+
+                // カテゴリが変わった場合、または最初のアイテムの場合に新しいカテゴリサブタイトルを作成
+                if (itemCategory !== lastCategory) {
+                    // 古いカテゴリグループがあれば、スペースを追加 (必要であれば)
+                    if (currentCategoryGroup && currentCategoryGroup.children.length > 0) {
+                        // オプション: カテゴリグループ間に明確な間隔を追加
+                        const spacer = document.createElement('div');
+                        spacer.className = 'h-4'; // スペーサーの高さ
+                        tabContentDiv.appendChild(spacer);
+                    }
+
+                    currentCategoryGroup = document.createElement('div');
+                    currentCategoryGroup.className = 'category-group'; // カテゴリグループ用のラッパー
+
+                    const categorySubtitle = document.createElement('h4');
+                    // サブタイトルにTailwindクラスを適用
+                    categorySubtitle.className = 'font-semibold text-lg text-gray-700 mt-2 mb-2 ml-4'; 
+                    categorySubtitle.textContent = itemCategory;
+                    currentCategoryGroup.appendChild(categorySubtitle);
+                    tabContentDiv.appendChild(currentCategoryGroup);
+                    lastCategory = itemCategory;
+                }
+
+                // アイテムを現在のカテゴリグループに追加
+                currentCategoryGroup.appendChild(createInputArea(item));
             });
             tabContentWrapper.appendChild(tabContentDiv);
         });
