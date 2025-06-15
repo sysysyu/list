@@ -15,11 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
-    // Utility functions for color conversion and lightening (もはや不要なため削除)
-    // function hexToHsl(hex) { /* ... */ }
-    // function hslToHex(h, s, l) { /* ... */ }
-    // function lightenHexColor(hex, percent) { /* ... */ }
-
     // タブとリストの背景色はCSSで固定されるため、JSのデフォルト色設定を削除または固定値に
     // 初期タブの色は白、リストアイテムの背景色も白に固定
     const initialDefaultTabColor = '#ffffff'; // 白
@@ -35,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
+    // itemDataにcategoryプロパティを追加するため、デフォルト値を更新
     let items = JSON.parse(localStorage.getItem('items')) || {};
     let history = JSON.parse(localStorage.getItem('history')) || [];
 
@@ -122,6 +118,26 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTabContentDisplay();
     };
 
+    // プルダウンのカテゴリリスト
+    const categories = [
+        '未分類', // デフォルトまたは選択なし
+        '飲料・お酒',
+        'お菓子',
+        '米・パン・種類',
+        '野菜',
+        '海鮮',
+        '肉・肉加工品',
+        '卵・チーズ・乳製品',
+        '果物',
+        '冷凍食品',
+        '豆腐・納豆',
+        '缶詰・瓶詰め',
+        '調味料',
+        '日用品',
+        '医薬品',
+        'その他'
+    ];
+
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
@@ -130,12 +146,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // リストアイテムの背景色を白に固定
         itemDiv.style.backgroundColor = '#ffffff'; 
 
+        // チェックマーク (チェックボックス)
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
+        // プルダウン (selectボックス)
+        const categorySelect = document.createElement('select');
+        categorySelect.className = 'p-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:ring-blue-500 focus:border-blue-500 flex-shrink-0';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categorySelect.appendChild(option);
+        });
+        // itemDataにcategoryがあればそれを設定、なければ「未分類」を選択
+        categorySelect.value = itemData.category || '未分類';
+        categorySelect.onchange = (e) => updateItemCategory(itemData.id, e.target.value);
+
+        // 入力フィールド
         const input = document.createElement('input');
         input.type = 'text';
         input.value = itemData.text;
@@ -144,12 +176,15 @@ document.addEventListener('DOMContentLoaded', () => {
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
 
+        // 削除ボタン
         const deleteButton = document.createElement('button');
         deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
+        // 要素の追加順序: チェックボックス、プルダウン、入力エリア、ゴミ箱アイコン
         itemDiv.appendChild(checkbox);
+        itemDiv.appendChild(categorySelect);
         itemDiv.appendChild(input);
         itemDiv.appendChild(deleteButton);
 
@@ -171,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const [checkedItem] = currentItems.splice(itemIndex, 1);
                 checkedItem.timestamp = Date.now();
                 checkedItem.tabId = activeTabId;
-                history.push(checkedItem);
+                // historyにcategoryも保存
+                history.push({ ...checkedItem, category: checkedItem.category || '未分類' }); 
                 saveItems();
                 saveHistory();
                 renderTabContents();
@@ -180,11 +216,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     };
 
+    // 入力エリアのテキストを更新
     const updateItemText = (id, newText) => {
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
             item.text = newText;
+            saveItems();
+        }
+    };
+
+    // 入力エリアのカテゴリを更新
+    const updateItemCategory = (id, newCategory) => {
+        const currentItems = items[activeTabId];
+        const item = currentItems.find(item => item.id === id);
+        if (item) {
+            item.category = newCategory;
             saveItems();
         }
     };
@@ -208,7 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const newItem = {
             id: Date.now().toString(),
             text: '',
-            checked: false
+            checked: false,
+            category: '未分類' // 新しいアイテムにデフォルトカテゴリを設定
         };
         if (!items[activeTabId]) {
             items[activeTabId] = [];
@@ -236,21 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tabNameSpan.textContent = tab.name;
             tabNameSpan.className = 'flex-grow font-medium';
 
-            // カラーピッカーは削除
-            // const colorInput = document.createElement('input');
-            // colorInput.type = 'color';
-            // colorInput.className = 'ml-3 w-8 h-8 rounded-full border border-gray-300 cursor-pointer';
-            // colorInput.value = tab.tabBgColor;
-            // colorInput.title = 'タブの背景色を選択';
-            // colorInput.onchange = (e) => {
-            //     const newTabColor = e.target.value;
-            //     tab.tabBgColor = newTabColor;
-            //     tab.listBgColor = lightenHexColor(newTabColor, 15);
-            //     saveTabs();
-            //     renderTabs();
-            //     renderTabContents();
-            // };
-
             const deleteTabButton = document.createElement('button');
             deleteTabButton.className = 'ml-3 p-1 text-red-500 hover:text-red-700 transition-colors rounded-full';
             deleteTabButton.innerHTML = '<i class="fas fa-times"></i>';
@@ -262,19 +295,58 @@ document.addEventListener('DOMContentLoaded', () => {
             moveHandle.draggable = true;
 
             tabItem.appendChild(tabNameSpan);
-            // tabItem.appendChild(colorInput); // カラーピッカーを削除
             tabItem.appendChild(deleteTabButton);
             tabItem.appendChild(moveHandle);
             tabsList.appendChild(tabItem);
         });
 
         let dragSrcEl = null;
-        function handleDragStart(e) { /* ... */ }
-        function handleDragOver(e) { /* ... */ }
-        function handleDragEnter(e) { /* ... */ }
-        function handleDragLeave(e) { /* ... */ }
-        function handleDrop(e) { /* ... */ }
-        function handleDragEnd(e) { /* ... */ }
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.tabId);
+            this.classList.add('opacity-50');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('bg-blue-100');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('bg-blue-100');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            if (dragSrcEl !== this) {
+                const dragId = e.dataTransfer.getData('text/plain');
+                const dropId = this.dataset.tabId;
+
+                const dragIndex = tabs.findIndex(t => t.id === dragId);
+                const dropIndex = tabs.findIndex(t => t.id === dropId);
+
+                const [removed] = tabs.splice(dragIndex, 1);
+                tabs.splice(dropIndex, 0, removed);
+
+                saveTabs();
+                renderTabSettings();
+                renderTabs();
+            }
+            this.classList.remove('bg-blue-100');
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('opacity-50');
+            const tabItems = document.querySelectorAll('#tabsList > div');
+            tabItems.forEach(item => item.classList.remove('bg-blue-100'));
+        }
 
         const tabItems = document.querySelectorAll('#tabsList > div');
         tabItems.forEach(item => {
@@ -302,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
     addTabBtn.onclick = () => {
         const newTabName = newTabNameInput.value.trim();
         if (newTabName) {
-            // 新しいタブにも固定色を適用
             const newTab = { id: Date.now().toString(), name: newTabName, tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor };
             tabs.push(newTab);
             items[newTab.id] = [];
@@ -316,15 +387,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const deleteTab = (id) => { /* ... */ };
-    function katakanaToHiragana(str) { /* ... */ return ''; }
-    const renderHistoryList = () => { /* ... */ };
-    const filterAndRenderHistory = () => { /* ... */ };
-    historyListBtn.onclick = () => { /* ... */ };
+    const deleteTab = (id) => {
+        if (tabs.length === 1) {
+            alert('最後のタブは削除できません。');
+            return;
+        }
+        const confirmDelete = confirm(`"${tabs.find(t => t.id === id).name}"タブを削除しますか？このタブのアイテムもすべて削除されます。`);
+        if (confirmDelete) {
+            tabs = tabs.filter(tab => tab.id !== id);
+            delete items[id];
+            history = history.filter(item => item.tabId !== id);
+
+            saveTabs();
+            saveItems();
+            saveHistory();
+
+            if (activeTabId === id) {
+                activeTabId = tabs[0].id;
+                saveActiveTab();
+            }
+            renderTabs();
+            renderTabContents();
+            renderTabSettings();
+            updateTabContentDisplay();
+        }
+    };
+
+    // カタカナをひらがなに変換する関数
+    function katakanaToHiragana(str) {
+        return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+            return String.fromCharCode(match.charCodeAt(0) - 0x60);
+        });
+    }
+
+    const renderHistoryList = () => {
+        historyTabFilter.innerHTML = '<option value="all">全てのタブ</option>';
+        tabs.forEach(tab => {
+            const option = document.createElement('option');
+            option.value = tab.id;
+            option.textContent = tab.name;
+            historyTabFilter.appendChild(option);
+        });
+        historyTabFilter.value = historyTabFilter.dataset.selected || 'all';
+
+        filterAndRenderHistory();
+    };
+
+    const filterAndRenderHistory = () => {
+        historyContent.innerHTML = '';
+        const filterTabId = historyTabFilter.value;
+        let filteredHistory = history.sort((a, b) => b.timestamp - a.timestamp);
+
+        if (filterTabId !== 'all') {
+            filteredHistory = filteredHistory.filter(item => item.tabId === filterTabId);
+        }
+
+        if (filteredHistory.length === 0) {
+            historyContent.innerHTML = '<p class="text-gray-500 text-center py-8">履歴はありません。</p>';
+            return;
+        }
+
+        const monthlyHistory = {};
+        filteredHistory.forEach(item => {
+            const date = new Date(item.timestamp);
+            const yearMonth = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+            if (!monthlyHistory[yearMonth]) {
+                monthlyHistory[yearMonth] = [];
+            }
+            monthlyHistory[yearMonth].push(item);
+        });
+
+        for (const yearMonth in monthlyHistory) {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'bg-gray-50 p-4 rounded-lg shadow-sm mb-4';
+
+            const monthHeader = document.createElement('h3');
+            monthHeader.className = 'text-xl font-semibold mb-3 text-gray-700 border-b pb-2';
+            monthHeader.textContent = `${yearMonth} (${monthlyHistory[yearMonth].length}個の完了タスク)`;
+            monthDiv.appendChild(monthHeader);
+
+            // タスクとカテゴリを組み合わせて正規化し、カウント
+            const taskCategoryCounts = {};
+            monthlyHistory[yearMonth].forEach(item => {
+                const normalizedTaskText = katakanaToHiragana(item.text || '（テキストなし）');
+                const category = item.category || '未分類';
+                const key = `${category} - ${normalizedTaskText}`; // カテゴリとタスクを組み合わせたキー
+                taskCategoryCounts[key] = (taskCategoryCounts[key] || 0) + 1;
+            });
+
+            const mergedTaskList = document.createElement('ul');
+            mergedTaskList.className = 'list-none p-0 m-0 space-y-2';
+
+            Object.keys(taskCategoryCounts).sort().forEach(key => {
+                const count = taskCategoryCounts[key];
+                const [category, taskText] = key.split(' - '); // キーからカテゴリとタスクを分割
+                const listItem = document.createElement('li');
+                listItem.className = 'flex items-center bg-white p-3 border border-gray-200 rounded-md shadow-xs text-gray-800 break-words';
+                listItem.innerHTML = `
+                    <i class="fas fa-check-circle text-green-500 mr-2 text-lg flex-shrink-0"></i>
+                    <span class="text-sm font-semibold text-gray-600 mr-2 flex-shrink-0">[${category}]</span>
+                    <span class="flex-grow text-base">${taskText}</span>
+                    <span class="ml-2 text-sm font-semibold text-blue-600 flex-shrink-0">(${count}回完了)</span>
+                `;
+                mergedTaskList.appendChild(listItem);
+            });
+            monthDiv.appendChild(mergedTaskList);
+            historyContent.appendChild(monthDiv);
+        }
+    };
+
+    historyListBtn.onclick = () => {
+        renderHistoryList();
+        showModal(historyListModal);
+    };
+
     closeHistoryListModalBtn.onclick = () => hideModal(historyListModal);
-    historyListModal.addEventListener('click', (e) => { /* ... */ });
-    historyTabFilter.onchange = (e) => { /* ... */ };
-    clearAllHistoryBtn.onclick = () => { /* ... */ };
+    historyListModal.addEventListener('click', (e) => {
+        if (e.target === historyListModal) {
+            hideModal(historyListModal);
+        }
+    });
+
+    historyTabFilter.onchange = (e) => {
+        historyTabFilter.dataset.selected = e.target.value;
+        filterAndRenderHistory();
+    };
+
+    clearAllHistoryBtn.onclick = () => {
+        const confirmClear = confirm('全ての履歴を消去しますか？この操作は元に戻せません。');
+        if (confirmClear) {
+            history = [];
+            saveHistory();
+            renderHistoryList();
+            alert('全ての履歴が消去されました。');
+        }
+    };
 
     let startX = 0;
     let currentTranslateX = 0;
@@ -332,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isTouchedOnInteractiveElement = false;
 
     tabContentWrapper.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
             isTouchedOnInteractiveElement = true;
             return;
         }
