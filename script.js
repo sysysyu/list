@@ -13,7 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeHistoryListModalBtn = document.getElementById('closeHistoryListModalBtn');
     const historyTabFilter = document.getElementById('historyTabFilter');
     const historyContent = document.getElementById('historyContent');
-    const clearAllHistoryBtn = document = document.getElementById('clearAllHistoryBtn'); // Fix: Removed redundant document =
+    const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+
+    // Make the addInputAreaBtn perfectly round
+    if (addInputAreaBtn) {
+        addInputAreaBtn.style.borderRadius = '9999px'; // Makes it perfectly round
+        addInputAreaBtn.style.width = '48px'; // Set a fixed width
+        addInputAreaBtn.style.height = '48px'; // Set a fixed height to make it a circle
+        addInputAreaBtn.style.display = 'flex';
+        addInputAreaBtn.style.alignItems = 'center';
+        addInputAreaBtn.style.justifyContent = 'center';
+    }
 
     // タブとリストの背景色はCSSで固定されるため、JSのデフォルト色設定を削除または固定値に
     const initialDefaultTabColor = '#ffffff'; // 白
@@ -509,37 +519,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 items[tab.id] = [];
             }
 
-            let lastCategory = null;
-            
-            items[tab.id].forEach(item => {
-                const itemCategory = item.category || '未分類';
+            // Display message if no tasks
+            if (items[tab.id].length === 0) {
+                const noTaskMessage = document.createElement('div');
+                noTaskMessage.className = 'text-center text-gray-500 py-8';
+                noTaskMessage.textContent = '＋ボタンからリストを追加してください';
+                tabContentDiv.appendChild(noTaskMessage);
+            } else {
+                let lastCategory = null;
+                
+                items[tab.id].forEach(item => {
+                    const itemCategory = item.category || '未分類';
 
-                // カテゴリが変わった場合、または最初のアイテムの場合に新しいカテゴリサブタイトルを作成
-                // かつ、そのカテゴリのアイテムが少なくとも1つ存在する場合にのみ表示
-                if (itemCategory !== lastCategory) {
-                    const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
-                    if (categoryItemsExist) {
-                        const categorySubtitleContainer = document.createElement('h4');
-                        categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2';
-                        
-                        // カテゴリサブタイトルアイコン
-                        const subtitleIcon = document.createElement('i');
-                        const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
-                        subtitleIcon.className = `${iconClass} text-xl`;
-                        
-                        const subtitleText = document.createElement('span');
-                        subtitleText.textContent = itemCategory;
+                    // カテゴリが変わった場合、または最初のアイテムの場合に新しいカテゴリサブタイトルを作成
+                    // かつ、そのカテゴリのアイテムが少なくとも1つ存在する場合にのみ表示
+                    if (itemCategory !== lastCategory) {
+                        const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
+                        if (categoryItemsExist) {
+                            const categorySubtitleContainer = document.createElement('h4');
+                            categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2';
+                            
+                            // カテゴリサブタイトルアイコン
+                            const subtitleIcon = document.createElement('i');
+                            const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
+                            subtitleIcon.className = `${iconClass} text-xl`;
+                            
+                            const subtitleText = document.createElement('span');
+                            subtitleText.textContent = itemCategory;
 
-                        categorySubtitleContainer.appendChild(subtitleIcon);
-                        categorySubtitleContainer.appendChild(subtitleText);
-                        tabContentDiv.appendChild(categorySubtitleContainer);
-                        lastCategory = itemCategory;
+                            categorySubtitleContainer.appendChild(subtitleIcon);
+                            categorySubtitleContainer.appendChild(subtitleText);
+                            tabContentDiv.appendChild(categorySubtitleContainer);
+                            lastCategory = itemCategory;
+                        }
                     }
-                }
 
-                // アイテムをタブコンテンツに直接追加
-                tabContentDiv.appendChild(createInputArea(item));
-            });
+                    // アイテムをタブコンテンツに直接追加
+                    tabContentDiv.appendChild(createInputArea(item));
+                });
+            }
             tabContentWrapper.appendChild(tabContentDiv);
         });
         updateTabContentDisplay();
