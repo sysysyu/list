@@ -538,26 +538,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     // カテゴリが変わった場合、または最初のアイテムの場合に新しいカテゴリサブタイトルを作成
                     // かつ、そのカテゴリのアイテムが少なくとも1つ存在する場合にのみ表示
                     if (itemCategory !== lastCategory) {
-                        const categoryItemsExist = items[tab.id].some(task => (task.category || '未分類') === itemCategory);
-                        if (categoryItemsExist) {
-                            const categorySubtitleContainer = document.createElement('h4');
-                            categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2';
-                            
-                            // カテゴリサブタイトルアイコン
-                            const subtitleIcon = document.createElement('i');
-                            const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
-                            subtitleIcon.className = `${iconClass} text-xl`;
-                            
-                            const subtitleText = document.createElement('span');
-                            subtitleText.textContent = itemCategory;
+                        const categorySubtitleContainer = document.createElement('h4');
+                        categorySubtitleContainer.className = 'font-semibold text-lg text-gray-700 mt-6 mb-2 ml-4 flex items-center space-x-2';
+                        
+                        // カテゴリサブタイトルアイコン
+                        const subtitleIcon = document.createElement('i');
+                        const iconClass = categoryIcons[itemCategory] || categoryIcons['未分類'];
+                        subtitleIcon.className = `${iconClass} text-xl`;
+                        
+                        const subtitleText = document.createElement('span');
+                        subtitleText.textContent = itemCategory;
 
-                            categorySubtitleContainer.appendChild(subtitleIcon);
-                            categorySubtitleContainer.appendChild(subtitleText);
-                            tabContentDiv.appendChild(categorySubtitleContainer);
-                            lastCategory = itemCategory;
-                        }
+                        categorySubtitleContainer.appendChild(subtitleIcon);
+                        categorySubtitleContainer.appendChild(subtitleText);
+                        tabContentDiv.appendChild(categorySubtitleContainer);
+                        lastCategory = itemCategory;
                     }
-
                     // アイテムをタブコンテンツに直接追加
                     tabContentDiv.appendChild(createInputArea(item));
                 });
@@ -667,7 +663,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
         // Adjusted px, py, mx, space-x for better mobile responsiveness and compactness
-        itemDiv.className = 'flex items-center px-2 py-2 rounded-xl shadow-md space-x-2 transition-all duration-300 transform hover:scale-[1.02] mx-2';
+        // px-1, mx-1, space-x-1 to make it even more compact for smaller screens
+        itemDiv.className = 'flex items-center px-1 py-2 rounded-xl shadow-md space-x-1 transition-all duration-300 transform hover:scale-[1.02] mx-1';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -713,11 +710,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderTabContents(); // DOMを再構築
 
                     // 新しく追加された入力エリアにフォーカスを当てる
-                    const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
-                    if (newlyAddedInput) {
-                        newlyAddedInput.focus();
-                        newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
+                    // renderTabContentsがDOMを再構築するため、setTimeoutで遅延させる
+                    setTimeout(() => {
+                        const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
+                        if (newlyAddedInput) {
+                            newlyAddedInput.focus();
+                            newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 50); // 短い遅延を追加
                 }
             }
         });
@@ -865,11 +865,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTabContentDisplay();
         
         // 新しく追加された入力エリアにフォーカスを当てる
-        const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
-        if (newlyAddedInput) {
-            newlyAddedInput.focus();
-            newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        setTimeout(() => {
+            const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
+            if (newlyAddedInput) {
+                newlyAddedInput.focus();
+                newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 50); // 短い遅延を追加
     };
 
     const renderTabSettings = () => {
@@ -1146,57 +1148,87 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let startX = 0;
+    let startY = 0; // Added to track Y position
     let currentTranslateX = 0;
     let isDragging = false;
-    let isTouchedOnInteractiveElement = false;
+    let swipeDirectionDetermined = false; // Flag to determine if swipe direction is set
 
     tabContentWrapper.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-            isTouchedOnInteractiveElement = true;
-            return;
-        }
-        isTouchedOnInteractiveElement = false;
-
         startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY; // Capture initial Y
         currentTranslateX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
-        isDragging = true;
+        isDragging = false; // Reset dragging state
+        swipeDirectionDetermined = false; // Reset direction flag
         tabContentWrapper.style.transition = 'none';
-    });
+    }, { passive: true }); // Use passive to avoid blocking scroll initially
 
     tabContentWrapper.addEventListener('touchmove', (e) => {
-        if (!isDragging || isTouchedOnInteractiveElement) return;
         const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
         const diffX = currentX - startX;
-        tabContentWrapper.style.transform = `translateX(${currentTranslateX + (diffX / window.innerWidth) * 100}%)`;
-    });
+        const diffY = currentY - startY;
+        const threshold = 5; // Minimum movement to consider as a swipe/scroll
+
+        if (!swipeDirectionDetermined) {
+            if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    // Horizontal swipe
+                    isDragging = true;
+                    swipeDirectionDetermined = true;
+                    e.preventDefault(); // Prevent vertical scroll if it's horizontal swipe
+                } else {
+                    // Vertical scroll
+                    swipeDirectionDetermined = true;
+                    return; // Let default scroll happen
+                }
+            } else {
+                return; // Not enough movement to determine direction
+            }
+        }
+
+        if (isDragging) {
+            e.preventDefault(); // Continue preventing default if identified as horizontal swipe
+            tabContentWrapper.style.transform = `translateX(${currentTranslateX + (diffX / window.innerWidth) * 100}%)`;
+        }
+    }, { passive: false }); // Use passive: false when e.preventDefault() is used
 
     tabContentWrapper.addEventListener('touchend', () => {
-        if (!isDragging || isTouchedOnInteractiveElement) return;
+        if (!isDragging) return; // Only process if it was a horizontal drag
+
         isDragging = false;
+        swipeDirectionDetermined = false;
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out';
 
         const endX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
-        const threshold = 15;
+        const swipeThreshold = 15; // Percentage threshold for a successful swipe
 
         const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
         let newActiveTabIndex = activeTabIndex;
 
-        if (endX < currentTranslateX - threshold && newActiveTabIndex < tabs.length - 1) {
+        if (endX < currentTranslateX - swipeThreshold) { // Swiped left
             newActiveTabIndex++;
         }
-        else if (endX > currentTranslateX + threshold && newActiveTabIndex > 0) {
+        else if (endX > currentTranslateX + swipeThreshold) { // Swiped right
             newActiveTabIndex--;
         }
 
-        switchTab(tabs[newActiveTabIndex].id);
+        // Clamp newActiveTabIndex to valid range
+        newActiveTabIndex = Math.max(0, Math.min(newActiveTabIndex, tabs.length - 1));
 
+        // If index changed, switch tab, otherwise snap back to current
+        if (newActiveTabIndex !== activeTabIndex) {
+            switchTab(tabs[newActiveTabIndex].id);
+        } else {
+            // Snap back to current tab if swipe was not enough
+            updateTabContentDisplay();
+        }
+        
         setTimeout(() => {
             const activeContentDiv = document.getElementById(`tab-content-${activeTabId}`);
             if (activeContentDiv) {
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
             }
         }, 300);
-        isTouchedOnInteractiveElement = false;
     });
 
     window.addEventListener('resize', () => {
