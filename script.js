@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
-    // Make the addInputAreaBtn perfectly round
+    // Makes the addInputAreaBtn perfectly round
     if (addInputAreaBtn) {
         addInputAreaBtn.style.borderRadius = '9999px'; // Makes it perfectly round
         addInputAreaBtn.style.width = '48px'; // Set a fixed width
@@ -680,6 +680,27 @@ document.addEventListener('DOMContentLoaded', () => {
         input.setAttribute('tabindex', '0'); 
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
+        // Enterキーでの新規リスト追加と空リスト削除の機能
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // デフォルトのEnter動作を防止
+
+                if (input.value.trim() === '') {
+                    // 入力エリアが空の場合は削除
+                    deleteInputArea(itemData.id);
+                } else {
+                    // 入力エリアにテキストがある場合は新しいリストアイテムを追加
+                    addInputAreaBtn.click(); // +ボタンをプログラム的にクリック
+                    // 追加された新しい入力エリアにフォーカスを移動
+                    setTimeout(() => {
+                        const allInputs = tabContentWrapper.querySelectorAll(`#tab-content-${activeTabId} input[type="text"]`);
+                        if (allInputs.length > 0) {
+                            allInputs[allInputs.length - 1].focus(); // 最後に追加された入力フィールドにフォーカス
+                        }
+                    }, 100); // 新しい要素がDOMに追加されるのを待つための短い遅延
+                }
+            }
+        });
         // フォーカスアウト時にソートと再レンダリングを実行
         input.onblur = () => {
             sortCurrentTabItems();
