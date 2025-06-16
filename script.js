@@ -1277,102 +1277,114 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let startX = 0;
-    let startY = 0; // Added to track Y position
-    let currentTranslateX = 0; // In pixels
+    let startY = 0; 
+    let initialTranslateX = 0; // Renamed for clarity: this is the translateX at the start of the touch
     let isDragging = false;
-    let swipeDirectionDetermined = false; // Flag to determine if swipe direction is set
+    let swipeDirectionDetermined = false; 
 
+    // Add touch listeners directly to the tabContentWrapper, which is the main scrollable area
+    // This ensures that swipes on the "background" (empty areas or between tasks) are also captured.
     tabContentWrapper.addEventListener('touchstart', (e) => {
+        // Only consider single touches for swiping
+        if (e.touches.length !== 1) return;
+
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY; 
         
-        // Get the current computed transform value in pixels
-        // This ensures we start the drag from the *actual* rendered position
+        // Get the current computed transform value in pixels at the start of touch
         const computedTransform = getComputedStyle(tabContentWrapper).transform;
         const matrix = new DOMMatrixReadOnly(computedTransform);
-        currentTranslateX = matrix.m41; // This is the translateX value in pixels
+        initialTranslateX = matrix.m41; 
 
         isDragging = false; 
         swipeDirectionDetermined = false; 
-        tabContentWrapper.style.transition = 'none'; // Disable transition during drag
-    }, { passive: true }); // Use passive: true to avoid blocking scroll initially
+        tabContentWrapper.style.transition = 'none'; // Disable transition during drag for direct manipulation
+    }, { passive: true }); // passive: true for touchstart is generally good for scroll performance
 
     tabContentWrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1) { // If multiple touches, reset and don't swipe
+            isDragging = false;
+            swipeDirectionDetermined = false;
+            return;
+        }
+
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
-        const diffX = currentX - startX; // Horizontal difference in pixels
-        const diffY = currentY - startY; // Vertical difference in pixels
-        const threshold = 20; // Increased threshold for less sensitivity in pixels
+        const diffX = currentX - startX; 
+        const diffY = currentY - startY; 
+        const threshold = 15; // Adjusted threshold for sensitivity (pixels)
 
         if (!swipeDirectionDetermined) {
             // Determine if it's a horizontal swipe or vertical scroll
-            if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    // Horizontal swipe detected
-                    isDragging = true;
-                    swipeDirectionDetermined = true;
-                    e.preventDefault(); // Prevent default vertical scrolling
-                } else {
-                    // Vertical scroll detected
-                    swipeDirectionDetermined = true;
-                    return; // Let browser handle vertical scroll
-                }
+            if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) { 
+                // Horizontal swipe detected: significant horizontal movement AND horizontal dominance
+                isDragging = true;
+                swipeDirectionDetermined = true;
+                e.preventDefault(); // Prevent default vertical scrolling of the page/container
+            } else if (Math.abs(diffY) > threshold) { 
+                // Vertical scroll detected: significant vertical movement
+                swipeDirectionDetermined = true;
+                return; // Let browser handle vertical scroll normally
             } else {
-                return; // Not enough movement to determine direction
+                return; // Not enough movement yet to determine direction
             }
         }
 
         if (isDragging) {
             e.preventDefault(); // Continue preventing default if identified as horizontal swipe
-            // Calculate new transform position in pixels
-            let newTransformX = currentTranslateX + diffX; 
+            let newTransformX = initialTranslateX + diffX; 
 
-            // Calculate boundaries for the translation in pixels
-            const maxAllowedX = 0; // The first tab is at 0px translation
-            const minAllowedX = -(tabs.length - 1) * window.innerWidth; // The last tab's leftmost position in pixels
+            // Define boundaries for translation (pixels)
+            const maxAllowedX = 0; 
+            const minAllowedX = -(tabs.length - 1) * window.innerWidth; 
 
             // Clamp the newTransformX within the allowed boundaries
             newTransformX = Math.max(minAllowedX, Math.min(newTransformX, maxAllowedX));
 
             tabContentWrapper.style.transform = `translateX(${newTransformX}px)`;
         }
-    }, { passive: false }); // Use passive: false because e.preventDefault() is called
+    }, { passive: false }); // passive: false because e.preventDefault() is called
 
     tabContentWrapper.addEventListener('touchend', () => {
         if (!isDragging) return; // Only process if it was a horizontal drag
 
         isDragging = false;
         swipeDirectionDetermined = false; // Reset for next touch event
-        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Re-enable transition for snap back
+        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Re-enable transition for snapping
 
-        // Get the final computed transform value in pixels
+        // Get the final computed transform value in pixels after the touch ends
         const computedTransform = getComputedStyle(tabContentWrapper).transform;
         const matrix = new DOMMatrixReadOnly(computedTransform);
-        const finalTransformX = matrix.m41; // Final position in pixels
+        const finalTransformX = matrix.m41; 
 
-        // Determine the target tab index based on the final position
-        // Each tab occupies window.innerWidth pixels. We want to snap to the nearest tab.
+        // Determine the target tab index based on the final position.
+        // Divide by window.innerWidth to get the "tab unit" and round to the nearest integer.
+        // Negate because translateX is negative for moving left (to next tabs).
         let newActiveTabIndex = Math.round(-finalTransformX / window.innerWidth);
 
-        // Clamp to valid index range (0 to tabs.length - 1)
+        // Ensure the new index is within valid bounds
         newActiveTabIndex = Math.max(0, Math.min(newActiveTabIndex, tabs.length - 1));
 
-        // Switch to the newly determined tab. This will set the transform with vw units.
+        // Switch to the newly determined tab. This function will re-render tabs and update transform.
+        // This ensures the snap to the nearest tab is smooth.
         switchTab(tabs[newActiveTabIndex].id);
         
         // After potential tab switch or snap back, ensure content height is correct
+        // A slight delay allows the CSS transition to begin before recalculating height.
         setTimeout(() => {
             const activeContentDiv = document.getElementById(`tab-content-${activeTabId}`);
             if (activeContentDiv) {
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
             }
-        }, 300); // Allow transition to complete before re-evaluating height
+        }, 300); 
     });
 
+    // Window resize handler: update content display to adjust for new window width
     window.addEventListener('resize', () => {
         updateTabContentDisplay();
     });
 
+    // Initial rendering of tabs and their contents when the page loads
     renderTabs();
     renderTabContents();
 });
