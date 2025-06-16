@@ -58,7 +58,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ゴミ袋': ['ゴミ袋', 'ごみ袋', 'ごみぶくろ'],
     'ラップ': ['ラップ', 'らっぷ'],
     'アルミホイル': ['アルミホイル', 'あるみほいる'],
-    '電池': ['電池', 'deんち'], // Note: 'denchi' corrected from 'deんち'
+    '電池': ['電池', 'でんち'], 
     'マスク': ['マスク', 'ますく'],
     '風邪薬': ['風邪薬', 'かぜぐすり'],
     '絆創膏': ['絆創膏', 'ばんそうこう'],
@@ -75,7 +75,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ハサミ': ['ハサミ', 'はさみ', '鋏'],
     'のり': ['のり', '糊', '接着剤'],
     '消しゴム': ['消しゴム', 'けしごむ'],
-    'テープ': ['テープ', 'teーぷ'], // Note: 'tepu' corrected from 'teーぷ'
+    'テープ': ['テープ', 'てーぷ'], 
     '輪ゴム': ['輪ゴム', 'わごむ'],
     'クリップ': ['クリップ', 'くりっぷ'],
     '付箋': ['付箋', 'ふせん'],
@@ -178,7 +178,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ヘアバンド': ['ヘアバンド', 'へあばんど'],
     'シュシュ': ['シュシュ', 'しゅしゅ'],
     'バレッタ': ['バレッタ', 'ばれった'],
-    'リボン': ['リボン', 'riぼん'], // Note: 'ribon' corrected from 'riぼん'
+    'リボン': ['リボン', 'りぼん'], 
     'カミソリ': ['カミソリ', 'かみそり'],
     'シェービングフォーム': ['シェービングフォーム', 'しぇーびんぐふぉーむ'],
     '脱毛クリーム': ['脱毛クリーム', 'だつもうくりーむ'],
@@ -228,7 +228,7 @@ const canonicalNamesMap = generateCanonicalMap({
     '誘引テープ': ['誘引テープ', 'ゆういんてーぷ'],
     '結束バンド': ['結束バンド', 'けっそくばんど'],
     '麻ひも': ['麻ひも', 'あさひも'],
-    '結束ひも': ['結束ひも', 'keっそくひも'], // Note: 'kessoku himo' corrected from 'keっそくひも'
+    '結束ひも': ['結束ひも', 'けっそくひも'], 
     '長靴': ['長靴', 'ながぐつ'],
     '作業着': ['作業着', 'さぎょうぎ'],
     '軽食': ['軽食', 'けいしょく'],
@@ -309,7 +309,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'アイシャドウ': ['アイシャドウ', 'あいしゃどう'],
     'アイライナー': ['あいらいなー'],
     'マスカラ': ['マスカラ', 'ますから'],
-    'リップ': ['リップ', 'riっプ'], // Note: 'rippu' corrected from 'riっプ'
+    'リップ': ['リップ', 'りっぷ'], 
     '口紅': ['口紅', 'くちべに'],
     'グロス': ['グロス', 'ぐろす'],
     'アイブロウ': ['アイブロウ', 'あいぶろう'],
@@ -370,20 +370,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let tabs = JSON.parse(localStorage.getItem('tabs')) || [{ id: 'default', name: 'デフォルト', tabBgColor: initialDefaultTabColor, listBgColor: initialDefaultListColor }];
     
-    // 既存のタブデータの色プロパティを上書き、またはデフォルトを設定
-    tabs = tabs.map(tab => {
-        tab.tabBgColor = initialDefaultTabColor;
-        tab.listBgColor = initialDefaultListColor;
-        return tab;
+    // Ensure `items` is initialized for all tabs from localStorage or default
+    let items = JSON.parse(localStorage.getItem('items')) || {};
+    tabs.forEach(tab => {
+        if (!items[tab.id]) {
+            items[tab.id] = [];
+        }
     });
 
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
-    let items = JSON.parse(localStorage.getItem('items')) || {};
     let history = JSON.parse(localStorage.getItem('history')) || [];
-
-    if (!items[activeTabId]) {
-        items[activeTabId] = [];
-    }
 
     // データ保存ヘルパー関数を早期に定義
     const saveTabs = () => localStorage.setItem('tabs', JSON.stringify(tabs));
@@ -603,7 +599,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputs = currentActiveContentDiv.querySelectorAll('input[type="text"]');
             inputs.forEach(inputElement => {
                 const itemId = inputElement.closest('[id^="item-"]').id.replace('item-', '');
-                updateItemText(itemId, inputElement.value); // Force save of current input value
+                const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
+                if (itemToUpdate && itemToUpdate.text !== inputElement.value) { // Only update if value changed
+                    updateItemText(itemId, inputElement.value); 
+                }
             });
         }
         // --- END: Save current tab's input values ---
@@ -890,11 +889,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text' && activeElement.closest('[id^="item-"]')) {
             const itemId = activeElement.closest('[id^="item-"]').id.replace('item-', '');
-            updateItemText(itemId, activeElement.value); // Force save of current input value
-            console.log('Forced save of active input before adding new item.'); // Debug log
+            const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
+            if (itemToUpdate && itemToUpdate.text !== activeElement.value) { // Only update if value changed
+                updateItemText(itemId, activeElement.value); 
+            }
         }
 
-        console.log('Add button clicked. Active Tab ID:', activeTabId); // Debug log
         const newItem = {
             id: Date.now().toString(),
             text: '',
@@ -902,12 +902,11 @@ document.addEventListener('DOMContentLoaded', () => {
             category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
             itemColor: duskyColors['オフホワイト'] // 新しいアイテムにデフォルト色を設定
         };
+        // Ensure items[activeTabId] array exists before pushing
         if (!items[activeTabId]) {
             items[activeTabId] = [];
-            console.log('Initialized new array for tab:', activeTabId); // Debug log
         }
         items[activeTabId].push(newItem);
-        console.log('Items for active tab after push:', items[activeTabId]); // Debug log
         sortCurrentTabItems(); // 新規追加後もソート
         saveItems();
         renderTabContents();
@@ -919,9 +918,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (newlyAddedInput) {
                 newlyAddedInput.focus();
                 newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                console.log('Focused on new input:', newItem.id); // Debug log
-            } else {
-                console.error('Failed to find new input element for focusing:', newItem.id); // Debug log
             }
         }, 50); // 短い遅延を追加
     };
@@ -1167,7 +1163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     historyListBtn.onclick = () => {
-        console.log('History list button clicked!'); // Debug log
         renderHistoryList();
         showModal(historyListModal);
     };
