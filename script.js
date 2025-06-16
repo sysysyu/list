@@ -351,8 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyListModal = document.getElementById('historyListModal');
     const closeHistoryListModalBtn = document.getElementById('closeHistoryListModalBtn');
     const historyTabFilter = document.getElementById('historyTabFilter');
-    // FIXED: Typo here. Was: const historyContent = document = document.getElementById('historyContent');
-    const historyContent = document.getElementById('historyContent');
+    const historyContent = document.getElementById('historyContent'); // Corrected typo here in previous fix
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
     // Makes the addInputAreaBtn perfectly round
@@ -598,6 +597,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchTab = (id) => {
+        // --- START: Save current tab's input values before switching ---
+        const currentActiveContentDiv = document.getElementById(`tab-content-${activeTabId}`);
+        if (currentActiveContentDiv) {
+            const inputs = currentActiveContentDiv.querySelectorAll('input[type="text"]');
+            inputs.forEach(inputElement => {
+                const itemId = inputElement.closest('[id^="item-"]').id.replace('item-', '');
+                updateItemText(itemId, inputElement.value); // Force save of current input value
+            });
+        }
+        // --- END: Save current tab's input values ---
+
         activeTabId = id;
         saveActiveTab();
         renderTabs();
@@ -747,6 +757,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // フォーカスアウト時にソートと再レンダリングを実行
         input.onblur = () => {
+            // updateItemTextはoninputで呼ばれているため、onblurでは不要だが、
+            // 空になった場合の削除処理は残しておく
             if (input.value.trim() === '') {
                 deleteInputArea(itemData.id);
             }
@@ -884,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         if (!items[activeTabId]) {
             items[activeTabId] = [];
-            console.log('Created new array for tab:', activeTabId); // Debug log
+            console.log('Initialized new array for tab:', activeTabId); // Debug log
         }
         items[activeTabId].push(newItem);
         console.log('Items for active tab after push:', items[activeTabId]); // Debug log
