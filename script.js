@@ -533,22 +533,29 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('--- renderTabContents called ---');
         console.log('Current activeTabId:', activeTabId);
         tabContentWrapper.innerHTML = ''; // Clear existing content
-        // Set tabContentWrapper to be a flex container and span across all tab contents
+        
+        // Explicitly set width of tabContentWrapper to span all tab contents
         tabContentWrapper.style.display = 'flex';
-        // tabContentWrapper's width will be determined by its children's 100vw widths
-        tabContentWrapper.style.width = 'auto'; // Let flex items determine total width
-        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Ensure smooth transition
-        tabContentWrapper.style.overflow = 'hidden'; // Ensure content outside current view is hidden horizontally
-        tabContentWrapper.style.position = 'relative'; // For absolute positioning of children if needed, good practice
+        tabContentWrapper.style.width = `${tabs.length * 100}vw`; // Set explicit total width
+        tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; 
+        tabContentWrapper.style.overflow = 'hidden'; 
+        tabContentWrapper.style.position = 'relative';
         tabContentWrapper.style.height = 'auto'; // Will be set by updateTabContentDisplay
 
         tabs.forEach(tab => {
             console.log(`Building content for tab: ${tab.name} (ID: ${tab.id})`);
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            // Each tabContentDiv now explicitly takes 100vw, and flex-shrink/grow helps manage its behavior
-            tabContentDiv.className = 'tab-content py-4 px-4 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
+            tabContentDiv.className = 'tab-content py-4 px-4 space-y-4 overflow-y-auto'; 
             tabContentDiv.style.width = '100vw'; // Each tab content is exactly one viewport width
+            tabContentDiv.style.flexShrink = '0'; // Explicitly prevent shrinking
+            tabContentDiv.style.flexGrow = '0'; // Explicitly prevent growing beyond 100vw
+            
+            // Add a temporary background for debugging visibility
+            // const debugColors = ['lightblue', 'lightgreen', 'lightcoral', 'lightgoldenrodyellow', 'lightpink'];
+            // tabContentDiv.style.backgroundColor = debugColors[tabs.indexOf(tab) % debugColors.length];
+            // console.log(`Debug: tabContentDiv background set to ${tabContentDiv.style.backgroundColor}`);
+
 
             if (!items[tab.id]) {
                 items[tab.id] = [];
@@ -609,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeContentDiv) {
                 // Adjust wrapper height to active tab content height
                 tabContentWrapper.style.height = `${activeContentDiv.scrollHeight}px`;
+                console.log(`[DISPLAY] Active tab ${activeTabId} scrollHeight: ${activeContentDiv.scrollHeight}px`);
             }
         }
     };
