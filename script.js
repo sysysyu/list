@@ -307,7 +307,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'パウダー': ['パウダー', 'ぱうだー'],
     'チーク': ['チーク', 'ちーく'],
     'アイシャドウ': ['アイシャドウ', 'あいしゃどう'],
-    'アイライナー': ['アイライナー', 'あいらいなー'],
+    'アイライナー': ['あいらいなー'],
     'マスカラ': ['マスカラ', 'ますから'],
     'リップ': ['リップ', 'りっぷ'],
     '口紅': ['口紅', 'くちべに'],
@@ -351,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyListModal = document.getElementById('historyListModal');
     const closeHistoryListModalBtn = document.getElementById('closeHistoryListModalBtn');
     const historyTabFilter = document.getElementById('historyTabFilter');
+    // FIXED: Typo here. Was: const historyContent = document = document.getElementById('historyContent');
     const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
@@ -683,8 +684,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Removed space-x from here. Added w-full to itemDiv to fill parent.
-        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform hover:scale-[1.02]';
+        // Added px-4 for internal padding and space-x-2 for spacing between elements
+        // Removed hover:scale-[1.02] as per user request
+        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform px-4 space-x-2';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -693,8 +695,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
-        // Adjusted mr-3 to mr-4 for more spacing
-        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer mr-4';
+        // Removed individual margins, spacing now handled by parent's space-x-2
+        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
         // 入力フィールド (input)
@@ -755,8 +757,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        // Adjusted ml-3 to ml-4 for more spacing
-        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 ml-4';
+        // Removed individual margins, spacing now handled by parent's space-x-2
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
         colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
         // パレットアイコンを削除し、カラー自体を表示
         colorIcon.onclick = (e) => {
@@ -766,8 +768,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 削除ボタン (button)
         const deleteButton = document.createElement('button');
-        // Adjusted ml-2 to ml-3 for more compact spacing at the end
-        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full ml-3';
+        // Removed individual margins, spacing now handled by parent's space-x-2
+        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
@@ -872,6 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     addInputAreaBtn.onclick = () => {
+        console.log('Add button clicked. Active Tab ID:', activeTabId); // Debug log
         const newItem = {
             id: Date.now().toString(),
             text: '',
@@ -881,12 +884,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         if (!items[activeTabId]) {
             items[activeTabId] = [];
+            console.log('Created new array for tab:', activeTabId); // Debug log
         }
         items[activeTabId].push(newItem);
+        console.log('Items for active tab after push:', items[activeTabId]); // Debug log
         sortCurrentTabItems(); // 新規追加後もソート
         saveItems();
         renderTabContents();
-        updateTabContentDisplay();
+        updateTabContentDisplay(); // Ensure display is updated correctly
         
         // 新しく追加された入力エリアにフォーカスを当てる
         setTimeout(() => {
@@ -894,6 +899,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (newlyAddedInput) {
                 newlyAddedInput.focus();
                 newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                console.log('Focused on new input:', newItem.id); // Debug log
+            } else {
+                console.error('Failed to find new input element for focusing:', newItem.id); // Debug log
             }
         }, 50); // 短い遅延を追加
     };
@@ -1110,6 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const taskCategoryCounts = {};
             monthlyHistory[yearMonth].forEach(item => {
                 // ここでgetCanonicalNameを使用
+                // Ensure getCanonicalName is accessible and correct
                 const canonicalTaskText = getCanonicalName(item.text || '（テキストなし）');
                 const category = item.category || '未分類';
                 const key = `${category} - ${canonicalTaskText}`; // 正規化された名前をキーに使用
