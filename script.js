@@ -321,18 +321,6 @@ const canonicalNamesMap = generateCanonicalMap({
     '除光液': ['除光液', 'じょこうえき'],
 });
 
-// Helper to get the canonical name for a given text
-const getCanonicalName = (text) => {
-    const normalizedText = katakanaToHiragana(text || '').toLowerCase(); // null/undefined対策と小文字化
-    // canonicalNamesMapはvariant to canonicalなので、直接参照
-    if (canonicalNamesMap[normalizedText]) {
-        return canonicalNamesMap[normalizedText];
-    }
-    // マップに見つからなければ、正規化されたテキスト自体を返す
-    return normalizedText;
-};
-
-
 document.addEventListener('DOMContentLoaded', () => {
     // Prevent zoom on button taps: Add touch-action to body and overflow-x hidden
     document.body.style.touchAction = 'manipulation';
@@ -534,10 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            // Changed px-0 to px-2 for padding from the edge
-            tabContentDiv.className = 'tab-content py-4 px-2 space-y-4 overflow-y-auto'; 
+            // Added px-2 to tabContentDiv for consistent horizontal padding
+            tabContentDiv.className = 'tab-content py-4 px-2 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
             tabContentDiv.style.width = `${100 / tabs.length}%`; // Distribute width evenly within the flex container
-            tabContentDiv.style.flexShrink = '0'; // Prevent shrinking
 
             if (!items[tab.id]) {
                 items[tab.id] = [];
@@ -683,8 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Removed space-x-1 from here to allow input to expand better
-        // Added w-full to ensure it takes full width of its parent px-2 div
+        // Removed space-x from here. Added w-full to itemDiv to fill parent.
         itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform hover:scale-[1.02]';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
@@ -694,8 +680,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
-        // Added mr-2 to checkbox
-        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer mr-2';
+        // Adjusted mr-2 to mr-3 for more spacing
+        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer mr-3';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
         // 入力フィールド (input)
@@ -704,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = itemData.text;
         input.placeholder = 'ここにタスクを入力';
         input.setAttribute('tabindex', '0'); 
-        // flex-grow already implies it takes up available space
+        // flex-grow ensures it takes remaining space, p-2 adds padding inside input
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
         // Enterキーでの新規リスト追加と空リスト削除の機能
@@ -756,7 +742,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 ml-2';
+        // Adjusted ml-2 to ml-3 for more spacing
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 ml-3';
         colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
         // パレットアイコンを削除し、カラー自体を表示
         colorIcon.onclick = (e) => {
@@ -766,7 +753,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 削除ボタン (button)
         const deleteButton = document.createElement('button');
-        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full ml-3';
+        // Adjusted ml-3 to ml-2 for more compact spacing at the end
+        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full ml-2';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
