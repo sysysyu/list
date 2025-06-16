@@ -546,6 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Building content for tab: ${tab.name} (ID: ${tab.id})`);
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
+            // Keep px-4 on tabContentDiv for overall list padding
             tabContentDiv.className = 'tab-content py-4 px-4 space-y-4 overflow-y-auto'; 
             tabContentDiv.style.width = '100vw'; // Each tab content is exactly one viewport width
             tabContentDiv.style.flexShrink = '0'; // Explicitly prevent shrinking
@@ -726,8 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Re-added px-4 to itemDiv for consistent internal padding
-        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform px-4 space-x-2';
+        // Removed px-4 from itemDiv. tabContentDiv already has px-4.
+        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform space-x-2';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
