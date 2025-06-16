@@ -373,17 +373,31 @@ document.addEventListener('DOMContentLoaded', () => {
     tabs.forEach(tab => {
         if (!items[tab.id]) {
             items[tab.id] = [];
+            console.log(`[INIT] items[${tab.id}] initialized as empty array.`);
         }
     });
 
     let activeTabId = localStorage.getItem('activeTabId') || tabs[0].id;
+    console.log(`[INIT] Initial activeTabId: ${activeTabId}`);
     let history = JSON.parse(localStorage.getItem('history')) || [];
 
     // データ保存ヘルパー関数を早期に定義
-    const saveTabs = () => localStorage.setItem('tabs', JSON.stringify(tabs));
-    const saveItems = () => localStorage.setItem('items', JSON.stringify(items));
-    const saveHistory = () => localStorage.setItem('history', JSON.stringify(history));
-    const saveActiveTab = () => localStorage.setItem('activeTabId', activeTabId);
+    const saveTabs = () => {
+        localStorage.setItem('tabs', JSON.stringify(tabs));
+        console.log('[SAVE] Tabs saved.');
+    };
+    const saveItems = () => {
+        localStorage.setItem('items', JSON.stringify(items));
+        console.log('[SAVE] Items saved. Current items state:', JSON.parse(JSON.stringify(items)));
+    };
+    const saveHistory = () => {
+        localStorage.setItem('history', JSON.stringify(history));
+        console.log('[SAVE] History saved.');
+    };
+    const saveActiveTab = () => {
+        localStorage.setItem('activeTabId', activeTabId);
+        console.log(`[SAVE] Active tab ID saved: ${activeTabId}`);
+    };
 
     // プルダウンのカテゴリリスト
     const categories = [
@@ -600,17 +614,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchTab = (id) => {
+        console.log(`[SWITCH] Attempting to switch from ${activeTabId} to ${id}`);
         // --- START: Save current tab's input values before switching ---
         const currentActiveContentDiv = document.getElementById(`tab-content-${activeTabId}`);
         if (currentActiveContentDiv) {
-            console.log('Saving inputs from OLD activeTabId:', activeTabId);
+            console.log(`[SWITCH] Saving inputs from OLD activeTabId: ${activeTabId}`);
             const inputs = currentActiveContentDiv.querySelectorAll('input[type="text"]');
             inputs.forEach(inputElement => {
                 const itemId = inputElement.closest('[id^="item-"]').id.replace('item-', '');
                 const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
                 if (itemToUpdate && itemToUpdate.text !== inputElement.value) { // Only update if value changed
                     updateItemText(itemId, inputElement.value); 
-                    console.log(`Saved item ${itemId}: ${inputElement.value}`);
+                    console.log(`[SWITCH] Saved item ${itemId}: ${inputElement.value}`);
                 }
             });
         }
@@ -618,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeTabId = id;
         saveActiveTab();
-        console.log('Switched to NEW activeTabId:', activeTabId);
+        console.log(`[SWITCH] Switched to NEW activeTabId: ${activeTabId}`);
         renderTabs();
         sortCurrentTabItems(); // タブ切り替え時にアイテムをソート
         renderTabContents(); // This will rebuild all tabs and show the correct one
@@ -881,15 +896,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setTimeout(() => {
-            items[activeTabId] = items[activeTabId].filter(item => item.id !== id);
+            if (items[activeTabId]) { // Ensure the array exists
+                 items[activeTabId] = items[activeTabId].filter(item => item.id !== id);
+                 console.log(`[DELETE] Item ${id} removed. Remaining items for tab ${activeTabId}:`, JSON.parse(JSON.stringify(items[activeTabId])));
+            } else {
+                 console.warn(`[DELETE] Attempted to delete from non-existent items array for tab ${activeTabId}`);
+            }
+           
             saveItems();
-            sortCurrentTabItems(); // 削除後もソート
+            sortCurrentTabItems(); 
             renderTabContents();
             updateTabContentDisplay();
         }, 500);
     };
 
     addInputAreaBtn.onclick = () => {
+        console.log('--- Add Button Clicked ---');
+        console.log('Current activeTabId BEFORE new item ADDITION:', activeTabId); 
         // Force save current focused input before adding a new item
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text') {
@@ -899,13 +922,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
                 if (itemToUpdate && itemToUpdate.text !== activeElement.value) { // Only update if value changed
                     updateItemText(itemId, activeElement.value); 
+                    console.log(`[ADD] Forced save of active input ${itemId}: ${activeElement.value}`);
                 }
             }
         }
-
-        console.log('--- Add Button Clicked ---');
-        console.log('Current activeTabId BEFORE new item:', activeTabId); 
-        console.log('Items for current activeTabId BEFORE new item:', JSON.parse(JSON.stringify(items[activeTabId]))); 
 
         const newItem = {
             id: Date.now().toString(),
@@ -914,31 +934,32 @@ document.addEventListener('DOMContentLoaded', () => {
             category: '未分類', 
             itemColor: duskyColors['オフホワイト']
         };
-        // Ensure items[activeTabId] array exists before pushing
+        // This is crucial: Ensure items[activeTabId] array exists before pushing
         if (!items[activeTabId]) {
             items[activeTabId] = [];
-            console.log(`Initialized items array for new tab: ${activeTabId}`);
+            console.warn(`[ADD] items[${activeTabId}] was undefined during add, initialized to empty array.`);
         }
         items[activeTabId].push(newItem);
-        console.log('Items for active tab AFTER push:', JSON.parse(JSON.stringify(items[activeTabId])));
+        console.log(`[ADD] New item added to tab ${activeTabId}. Current items for this tab:`, JSON.parse(JSON.stringify(items[activeTabId])));
 
         sortCurrentTabItems(); 
         saveItems();
         
-        console.log('Calling renderTabContents and updateTabContentDisplay...');
+        console.log('[ADD] Calling renderTabContents and updateTabContentDisplay after adding item...');
         renderTabContents(); 
         updateTabContentDisplay(); 
         
         setTimeout(() => {
+            // Select the input element specifically within the active tab's content div
             const newlyAddedInput = document.querySelector(`#tab-content-${activeTabId} #item-${newItem.id} input[type="text"]`);
             if (newlyAddedInput) {
                 newlyAddedInput.focus();
                 newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                console.log('Focused on new input:', newItem.id, 'in tab:', activeTabId);
+                console.log(`[ADD] Focused on new input: ${newItem.id} in tab: ${activeTabId}`);
             } else {
-                console.error('Failed to find new input element for focusing:', newItem.id, 'in tab:', activeTabId);
+                console.error(`[ADD] Failed to find new input element for focusing: ${newItem.id} in tab: ${activeTabId}. DOM might not be fully updated.`);
             }
-        }, 50);
+        }, 50); // Small delay to ensure DOM update
     };
 
     const renderTabSettings = () => {
