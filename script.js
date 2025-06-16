@@ -529,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // renderTabContents は、タブが切り替わったときや初期表示時に全体のDOMを再構築するために使用
     const renderTabContents = () => {
         console.log('--- renderTabContents called ---');
         console.log('Current activeTabId:', activeTabId);
@@ -552,11 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContentDiv.style.flexShrink = '0'; // Explicitly prevent shrinking
             tabContentDiv.style.flexGrow = '0'; // Explicitly prevent growing beyond 100vw
             
-            // Add a temporary background for debugging visibility
-            // const debugColors = ['lightblue', 'lightgreen', 'lightcoral', 'lightgoldenrodyellow', 'lightpink'];
-            // tabContentDiv.style.backgroundColor = debugColors[tabs.indexOf(tab) % debugColors.length];
-            // console.log(`Debug: tabContentDiv background set to ${tabContentDiv.style.backgroundColor}`);
-
 
             if (!items[tab.id]) {
                 items[tab.id] = [];
@@ -727,7 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Removed px-4 from itemDiv. tabContentDiv already has px-4.
+        // Removed px-4 from itemDiv to make it expand to full width within tabContentDiv's padding.
+        // This is crucial for "画面いっぱい" and trash icon visibility.
         itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform space-x-2';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
@@ -758,30 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     deleteInputArea(itemData.id);
                 } else {
                     // 入力エリアにテキストがある場合は新しいリストアイテムを追加
-                    const newItem = {
-                        id: Date.now().toString(),
-                        text: '',
-                        checked: false,
-                        category: '未分類',
-                        itemColor: duskyColors['オフホワイト']
-                    };
-                    if (!items[activeTabId]) {
-                        items[activeTabId] = [];
-                    }
-                    items[activeTabId].push(newItem);
-                    sortCurrentTabItems();
-                    saveItems();
-                    renderTabContents(); // DOMを再構築
-
-                    // 新しく追加された入力エリアにフォーカスを当てる
-                    // renderTabContentsがDOMを再構築するため、setTimeoutで遅延させる
-                    setTimeout(() => {
-                        const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
-                        if (newlyAddedInput) {
-                            newlyAddedInput.focus();
-                            newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }
-                    }, 50); // 短い遅延を追加
+                    addNewItem(); // Call the unified add function
                 }
             }
         });
@@ -792,8 +766,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (input.value.trim() === '') {
                 deleteInputArea(itemData.id);
             }
-            sortCurrentTabItems();
-            renderTabContents();
+            // Sort and render contents only on tab switch to avoid keyboard closing
+            // sortCurrentTabItems();
+            // renderTabContents();
             updateTabContentDisplay();
         };
 
@@ -840,8 +815,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 history.push({ ...checkedItem, category: checkedItem.category || '未分類' }); 
                 saveItems();
                 saveHistory();
-                sortCurrentTabItems(); // 完了後もソート
-                renderTabContents();
+                
+                // Remove the item's DOM element directly
+                if (itemElement && itemElement.parentNode) {
+                    itemElement.parentNode.removeChild(itemElement);
+                }
+
+                // If the last item was deleted and now the tab is empty, show the message
+                const currentTabContentDiv = document.getElementById(`tab-content-${activeTabId}`);
+                if (items[activeTabId].length === 0 && currentTabContentDiv.querySelector('.no-task-message') === null) {
+                    const noTaskMessage = document.createElement('div');
+                    noTaskMessage.className = 'text-center text-gray-500 py-8 no-task-message';
+                    noTaskMessage.textContent = '＋ボタンからリストを追加してください';
+                    currentTabContentDiv.appendChild(noTaskMessage);
+                } else if (items[activeTabId].length > 0 && currentTabContentDiv.querySelector('.no-task-message')) {
+                     // If items are now present, remove the 'no task message'
+                    const msg = currentTabContentDiv.querySelector('.no-task-message');
+                    if (msg) msg.remove();
+                }
+
+                // Sorting will happen on tab switch, not on every check
+                // sortCurrentTabItems(); 
+                // renderTabContents(); 
                 updateTabContentDisplay();
             }
         }, 500);
@@ -881,18 +876,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             saveItems(); // テキストとカテゴリの変更を保存
+            // No need to re-render for category change in this direct-update model
+            // sortCurrentTabItems(); // Sorting is done on tab switch now
+            // renderTabContents(); // Full re-render not needed here
         }
     };
 
     // 入力エリアのカテゴリを更新 (自動設定されるため、手動変更は考慮しない)
+    // この関数は、現状の自動カテゴリ設定では直接使用されない
     const updateItemCategory = (id, newCategory) => {
         const currentItems = items[activeTabId];
         const item = currentItems.find(item => item.id === id);
         if (item) {
             item.category = newCategory;
             saveItems();
-            sortCurrentTabItems();
-            renderTabContents();
+            // sortCurrentTabItems(); // Sorting is done on tab switch now
+            // renderTabContents(); // Full re-render not needed here
             updateTabContentDisplay();
         }
     };
@@ -913,15 +912,35 @@ document.addEventListener('DOMContentLoaded', () => {
             }
            
             saveItems();
-            sortCurrentTabItems(); 
-            renderTabContents();
+            // Remove the item's DOM element directly
+            if (itemElement && itemElement.parentNode) {
+                itemElement.parentNode.removeChild(itemElement);
+            }
+
+            // If the last item was deleted and now the tab is empty, show the message
+            const currentTabContentDiv = document.getElementById(`tab-content-${activeTabId}`);
+            if (items[activeTabId].length === 0 && currentTabContentDiv.querySelector('.no-task-message') === null) {
+                const noTaskMessage = document.createElement('div');
+                noTaskMessage.className = 'text-center text-gray-500 py-8 no-task-message';
+                noTaskMessage.textContent = '＋ボタンからリストを追加してください';
+                currentTabContentDiv.appendChild(noTaskMessage);
+            } else if (items[activeTabId].length > 0 && currentTabContentDiv.querySelector('.no-task-message')) {
+                // If items are now present, remove the 'no task message'
+                const msg = currentTabContentDiv.querySelector('.no-task-message');
+                if (msg) msg.remove();
+            }
+
+            // sortCurrentTabItems(); // Sorting is done on tab switch now
+            // renderTabContents(); // Full re-render not needed here
             updateTabContentDisplay();
-        }, 500);
+        }, 500); // Wait for transition
     };
 
-    addInputAreaBtn.onclick = () => {
-        console.log('--- Add Button Clicked ---');
+    // Unified function to add a new item, avoiding full re-render
+    const addNewItem = () => {
+        console.log('--- addNewItem called ---');
         console.log('Current activeTabId BEFORE new item ADDITION:', activeTabId); 
+
         // Force save current focused input before adding a new item
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text') {
@@ -943,33 +962,52 @@ document.addEventListener('DOMContentLoaded', () => {
             category: '未分類', 
             itemColor: duskyColors['オフホワイト']
         };
-        // This is crucial: Ensure items[activeTabId] array exists before pushing
+        
         if (!items[activeTabId]) {
             items[activeTabId] = [];
             console.warn(`[ADD] items[${activeTabId}] was undefined during add, initialized to empty array.`);
         }
+        
         items[activeTabId].push(newItem);
         console.log(`[ADD] New item added to tab ${activeTabId}. Current items for this tab:`, JSON.parse(JSON.stringify(items[activeTabId])));
 
-        sortCurrentTabItems(); 
-        saveItems();
-        
-        console.log('[ADD] Calling renderTabContents and updateTabContentDisplay after adding item...');
-        renderTabContents(); 
-        updateTabContentDisplay(); 
-        
-        setTimeout(() => {
-            // Select the input element specifically within the active tab's content div
-            const newlyAddedInput = document.querySelector(`#tab-content-${activeTabId} #item-${newItem.id} input[type="text"]`);
-            if (newlyAddedInput) {
-                newlyAddedInput.focus();
-                newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                console.log(`[ADD] Focused on new input: ${newItem.id} in tab: ${activeTabId}`);
-            } else {
-                console.error(`[ADD] Failed to find new input element for focusing: ${newItem.id} in tab: ${activeTabId}. DOM might not be fully updated.`);
+        saveItems(); // Save items immediately after adding to data model
+
+        const currentTabContentDiv = document.getElementById(`tab-content-${activeTabId}`);
+        if (currentTabContentDiv) {
+            // If "no task message" is present, remove it
+            const noTaskMessage = currentTabContentDiv.querySelector('.no-task-message');
+            if (noTaskMessage) {
+                noTaskMessage.remove();
             }
-        }, 50); // Small delay to ensure DOM update
+
+            const newItemDiv = createInputArea(newItem);
+            currentTabContentDiv.appendChild(newItemDiv);
+            console.log(`[ADD] Appended new item DOM element ${newItem.id} to tab ${activeTabId}.`);
+
+            // Focus the newly added input
+            // Using requestAnimationFrame for better timing with DOM updates
+            requestAnimationFrame(() => {
+                const newlyAddedInput = newItemDiv.querySelector('input[type="text"]');
+                if (newlyAddedInput) {
+                    newlyAddedInput.focus();
+                    newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    console.log(`[ADD] Focused on new input: ${newItem.id} in tab: ${activeTabId}`);
+                } else {
+                    console.error(`[ADD] Failed to find new input element for focusing: ${newItem.id} in tab: ${activeTabId}.`);
+                }
+                // Update wrapper height after appending new item
+                updateTabContentDisplay();
+            });
+        } else {
+            console.error(`[ADD] Could not find current tab content div for tab: ${activeTabId}`);
+            // Fallback to full re-render if current tab content div is unexpectedly missing
+            renderTabContents();
+            updateTabContentDisplay();
+        }
     };
+
+    addInputAreaBtn.onclick = () => addNewItem();
 
     const renderTabSettings = () => {
         tabsList.innerHTML = '';
