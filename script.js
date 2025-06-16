@@ -1345,33 +1345,19 @@ document.addEventListener('DOMContentLoaded', () => {
         swipeDirectionDetermined = false; // Reset for next touch event
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Re-enable transition for snap back
 
-        const endXPercentage = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
-        const swipeThresholdPercentage = 15; // Percentage of element width for a successful swipe
+        // Get the final transform percentage
+        const finalTransformPercentage = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
 
-        const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
-        let newActiveTabIndex = activeTabIndex;
+        // Calculate the closest tab index based on the final transform percentage
+        // The transform is negative, so we need to negate it to get a positive index-like value
+        // Then divide by 100 (for 100vw unit) and round to the nearest whole number
+        let newActiveTabIndex = Math.round(-finalTransformPercentage / 100);
 
-        // Calculate the starting percentage for the current active tab
-        const currentTabStartPercentage = -(activeTabIndex * 100);
-
-        // Determine swipe direction based on how far the swipe moved from the current tab's position
-        if (endXPercentage < currentTabStartPercentage - swipeThresholdPercentage) { // Swiped left significantly
-            newActiveTabIndex++;
-        } else if (endXPercentage > currentTabStartPercentage + swipeThresholdPercentage) { // Swiped right significantly
-            newActiveTabIndex--;
-        }
-
-        // Clamp newActiveTabIndex to valid range (0 to tabs.length - 1)
+        // Clamp the new index to valid range (0 to tabs.length - 1)
         newActiveTabIndex = Math.max(0, Math.min(newActiveTabIndex, tabs.length - 1));
 
-        // If the calculated new index is different from the current active index, switch tab
-        if (newActiveTabIndex !== activeTabIndex) {
-            switchTab(tabs[newActiveTabIndex].id);
-        } else {
-            // Snap back to current tab if swipe was not enough or no significant swipe
-            // This is already handled by updateTabContentDisplay after switchTab or explicitly here
-            updateTabContentDisplay();
-        }
+        // Switch to the newly determined tab
+        switchTab(tabs[newActiveTabIndex].id);
         
         // After potential tab switch or snap back, ensure content height is correct
         setTimeout(() => {
