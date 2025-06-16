@@ -516,7 +516,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderTabContents = () => {
-        tabContentWrapper.innerHTML = '';
+        console.log('--- renderTabContents called ---');
+        console.log('Current activeTabId:', activeTabId);
+        tabContentWrapper.innerHTML = ''; // Clear existing content
         // Set tabContentWrapper to be a flex container and span across all tab contents
         tabContentWrapper.style.display = 'flex';
         // tabContentWrapper's width will be determined by its children's 100vw widths
@@ -527,16 +529,19 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContentWrapper.style.height = 'auto'; // Will be set by updateTabContentDisplay
 
         tabs.forEach(tab => {
+            console.log(`Building content for tab: ${tab.name} (ID: ${tab.id})`);
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
             // Each tabContentDiv now explicitly takes 100vw, and flex-shrink/grow helps manage its behavior
-            // Changed px-2 to px-4 for consistent padding with items
             tabContentDiv.className = 'tab-content py-4 px-4 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
             tabContentDiv.style.width = '100vw'; // Each tab content is exactly one viewport width
 
             if (!items[tab.id]) {
                 items[tab.id] = [];
+                console.warn(`items[${tab.id}] was undefined, initialized to empty array.`);
             }
+            console.log(`Items for ${tab.name} (${tab.id}):`, JSON.parse(JSON.stringify(items[tab.id])));
+
 
             // Display message if no tasks
             if (items[tab.id].length === 0) {
@@ -544,6 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 noTaskMessage.className = 'text-center text-gray-500 py-8';
                 noTaskMessage.textContent = '＋ボタンからリストを追加してください';
                 tabContentDiv.appendChild(noTaskMessage);
+                console.log(`Added 'no task message' to ${tab.name} (${tab.id})`);
             } else {
                 let lastCategory = null;
                 
@@ -572,10 +578,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     // アイテムをタブコンテンツに直接追加
                     tabContentDiv.appendChild(createInputArea(item));
                 });
+                console.log(`Added ${items[tab.id].length} items to ${tab.name} (${tab.id})`);
             }
             tabContentWrapper.appendChild(tabContentDiv);
         });
         updateTabContentDisplay();
+        console.log('--- renderTabContents finished ---');
     };
 
     const updateTabContentDisplay = () => {
@@ -595,12 +603,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- START: Save current tab's input values before switching ---
         const currentActiveContentDiv = document.getElementById(`tab-content-${activeTabId}`);
         if (currentActiveContentDiv) {
+            console.log('Saving inputs from OLD activeTabId:', activeTabId);
             const inputs = currentActiveContentDiv.querySelectorAll('input[type="text"]');
             inputs.forEach(inputElement => {
                 const itemId = inputElement.closest('[id^="item-"]').id.replace('item-', '');
                 const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
                 if (itemToUpdate && itemToUpdate.text !== inputElement.value) { // Only update if value changed
                     updateItemText(itemId, inputElement.value); 
+                    console.log(`Saved item ${itemId}: ${inputElement.value}`);
                 }
             });
         }
@@ -608,9 +618,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeTabId = id;
         saveActiveTab();
+        console.log('Switched to NEW activeTabId:', activeTabId);
         renderTabs();
         sortCurrentTabItems(); // タブ切り替え時にアイテムをソート
-        renderTabContents();
+        renderTabContents(); // This will rebuild all tabs and show the correct one
         updateTabContentDisplay();
         window.scrollTo(0, 0); // Scroll to top of the page on tab switch
     };
@@ -692,8 +703,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Removed px-4 from itemDiv to let parent's padding handle it, fixing cutoff icon.
-        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform space-x-2';
+        // Re-added px-4 to itemDiv for consistent internal padding
+        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform px-4 space-x-2';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -886,11 +897,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (closestItemDiv) {
                 const itemId = closestItemDiv.id.replace('item-', '');
                 const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
-                if (itemToUpdate && itemToUpdate.text !== activeElement.value) {
+                if (itemToUpdate && itemToUpdate.text !== activeElement.value) { // Only update if value changed
                     updateItemText(itemId, activeElement.value); 
                 }
             }
         }
+
+        console.log('--- Add Button Clicked ---');
+        console.log('Current activeTabId BEFORE new item:', activeTabId); 
+        console.log('Items for current activeTabId BEFORE new item:', JSON.parse(JSON.stringify(items[activeTabId]))); 
 
         const newItem = {
             id: Date.now().toString(),
@@ -902,11 +917,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ensure items[activeTabId] array exists before pushing
         if (!items[activeTabId]) {
             items[activeTabId] = [];
+            console.log(`Initialized items array for new tab: ${activeTabId}`);
         }
         items[activeTabId].push(newItem);
+        console.log('Items for active tab AFTER push:', JSON.parse(JSON.stringify(items[activeTabId])));
+
         sortCurrentTabItems(); 
         saveItems();
-        renderTabContents();
+        
+        console.log('Calling renderTabContents and updateTabContentDisplay...');
+        renderTabContents(); 
         updateTabContentDisplay(); 
         
         setTimeout(() => {
@@ -914,6 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (newlyAddedInput) {
                 newlyAddedInput.focus();
                 newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                console.log('Focused on new input:', newItem.id, 'in tab:', activeTabId);
+            } else {
+                console.error('Failed to find new input element for focusing:', newItem.id, 'in tab:', activeTabId);
             }
         }, 50);
     };
