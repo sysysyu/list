@@ -226,9 +226,7 @@ const canonicalNamesMap = generateCanonicalMap({
     '防虫ネット': ['防虫ネット', 'ぼうちゅうねっと'],
     '支柱': ['支柱', 'しちゅう'],
     '誘引テープ': ['誘引テープ', 'ゆういんてーぷ'],
-    '結束バンド': ['結束バンド', 'けっそくばんど'],
-    '麻ひも': ['麻ひも', 'あさひも'],
-    '結束ひも': ['結束ひも', 'けっそくひも'], 
+    '結束バンド': ['結束バンド', 'けっそくばんど'], 
     '長靴': ['長靴', 'ながぐつ'],
     '作業着': ['作業着', 'さぎょうぎ'],
     '軽食': ['軽食', 'けいしょく'],
@@ -532,7 +530,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
             // Each tabContentDiv now explicitly takes 100vw, and flex-shrink/grow helps manage its behavior
-            tabContentDiv.className = 'tab-content py-4 px-2 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
+            // Changed px-2 to px-4 for consistent padding with items
+            tabContentDiv.className = 'tab-content py-4 px-4 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
             tabContentDiv.style.width = '100vw'; // Each tab content is exactly one viewport width
 
             if (!items[tab.id]) {
@@ -693,9 +692,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createInputArea = (itemData) => {
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${itemData.id}`;
-        // Added px-4 for internal padding and space-x-2 for spacing between elements
-        // Removed hover:scale-[1.02] as per user request
-        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform px-4 space-x-2';
+        // Removed px-4 from itemDiv to let parent's padding handle it, fixing cutoff icon.
+        itemDiv.className = 'flex items-center w-full py-2 rounded-xl shadow-md transition-all duration-300 transform space-x-2';
         
         // リストアイテムの背景色を白に固定 (ユーザーの要望)
         itemDiv.style.backgroundColor = '#ffffff'; 
@@ -704,7 +702,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
-        // Removed individual margins, spacing now handled by parent's space-x-2
         checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
@@ -714,7 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = itemData.text;
         input.placeholder = 'ここにタスクを入力';
         input.setAttribute('tabindex', '0'); 
-        // flex-grow ensures it takes remaining space, p-2 adds padding inside input
         input.className = 'flex-grow p-2 border-none focus:ring-0 focus:outline-none text-lg text-gray-800 bg-transparent';
         input.oninput = (e) => updateItemText(itemData.id, e.target.value);
         // Enterキーでの新規リスト追加と空リスト削除の機能
@@ -768,7 +764,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        // Removed individual margins, spacing now handled by parent's space-x-2
         colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0';
         colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
         // パレットアイコンを削除し、カラー自体を表示
@@ -779,7 +774,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 削除ボタン (button)
         const deleteButton = document.createElement('button');
-        // Removed individual margins, spacing now handled by parent's space-x-2
         deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
@@ -887,11 +881,14 @@ document.addEventListener('DOMContentLoaded', () => {
     addInputAreaBtn.onclick = () => {
         // Force save current focused input before adding a new item
         const activeElement = document.activeElement;
-        if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text' && activeElement.closest('[id^="item-"]')) {
-            const itemId = activeElement.closest('[id^="item-"]').id.replace('item-', '');
-            const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
-            if (itemToUpdate && itemToUpdate.text !== activeElement.value) { // Only update if value changed
-                updateItemText(itemId, activeElement.value); 
+        if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text') {
+            const closestItemDiv = activeElement.closest('[id^="item-"]');
+            if (closestItemDiv) {
+                const itemId = closestItemDiv.id.replace('item-', '');
+                const itemToUpdate = items[activeTabId].find(item => item.id === itemId);
+                if (itemToUpdate && itemToUpdate.text !== activeElement.value) {
+                    updateItemText(itemId, activeElement.value); 
+                }
             }
         }
 
@@ -899,27 +896,26 @@ document.addEventListener('DOMContentLoaded', () => {
             id: Date.now().toString(),
             text: '',
             checked: false,
-            category: '未分類', // 新しいアイテムにデフォルトカテゴリを設定
-            itemColor: duskyColors['オフホワイト'] // 新しいアイテムにデフォルト色を設定
+            category: '未分類', 
+            itemColor: duskyColors['オフホワイト']
         };
         // Ensure items[activeTabId] array exists before pushing
         if (!items[activeTabId]) {
             items[activeTabId] = [];
         }
         items[activeTabId].push(newItem);
-        sortCurrentTabItems(); // 新規追加後もソート
+        sortCurrentTabItems(); 
         saveItems();
         renderTabContents();
-        updateTabContentDisplay(); // Ensure display is updated correctly
+        updateTabContentDisplay(); 
         
-        // New item will be added and then focused
         setTimeout(() => {
-            const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
+            const newlyAddedInput = document.querySelector(`#tab-content-${activeTabId} #item-${newItem.id} input[type="text"]`);
             if (newlyAddedInput) {
                 newlyAddedInput.focus();
                 newlyAddedInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-        }, 50); // 短い遅延を追加
+        }, 50);
     };
 
     const renderTabSettings = () => {
