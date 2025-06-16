@@ -19,7 +19,7 @@ const generateCanonicalMap = (sourceMap) => {
     return map;
 };
 
-// Canonical names mapping
+// Canonical names mapping for auto-categorization and history normalization
 // 標準化された名前のマップ定義
 const canonicalNamesMap = generateCanonicalMap({
     'しょうゆ': ['しょうゆ', 'ショウユ', '醤油'],
@@ -321,6 +321,18 @@ const canonicalNamesMap = generateCanonicalMap({
     '除光液': ['除光液', 'じょこうえき'],
 });
 
+// Helper to get the canonical name for a given text
+const getCanonicalName = (text) => {
+    const normalizedText = katakanaToHiragana(text || '').toLowerCase(); // null/undefined対策と小文字化
+    // canonicalNamesMapはvariant to canonicalなので、直接参照
+    if (canonicalNamesMap[normalizedText]) {
+        return canonicalNamesMap[normalizedText];
+    }
+    // マップに見つからなければ、正規化されたテキスト自体を返す
+    return normalizedText;
+};
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // Prevent zoom on button taps: Add touch-action to body and overflow-x hidden
     document.body.style.touchAction = 'manipulation';
@@ -513,7 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContentWrapper.innerHTML = '';
         // Set tabContentWrapper to be a flex container and span across all tab contents
         tabContentWrapper.style.display = 'flex';
-        tabContentWrapper.style.width = `${tabs.length * 100}%`; // Each tab is 100% of the viewport width effectively
+        // tabContentWrapper's width will be determined by its children's 100vw widths
+        tabContentWrapper.style.width = 'auto'; // Let flex items determine total width
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Ensure smooth transition
         tabContentWrapper.style.overflow = 'hidden'; // Ensure content outside current view is hidden horizontally
         tabContentWrapper.style.position = 'relative'; // For absolute positioning of children if needed, good practice
@@ -522,9 +535,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs.forEach(tab => {
             const tabContentDiv = document.createElement('div');
             tabContentDiv.id = `tab-content-${tab.id}`;
-            // Added px-2 to tabContentDiv for consistent horizontal padding
+            // Each tabContentDiv now explicitly takes 100vw, and flex-shrink/grow helps manage its behavior
             tabContentDiv.className = 'tab-content py-4 px-2 space-y-4 overflow-y-auto flex-shrink-0 flex-grow'; 
-            tabContentDiv.style.width = `${100 / tabs.length}%`; // Distribute width evenly within the flex container
+            tabContentDiv.style.width = '100vw'; // Each tab content is exactly one viewport width
 
             if (!items[tab.id]) {
                 items[tab.id] = [];
@@ -573,8 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTabContentDisplay = () => {
         const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
         if (activeTabIndex !== -1) {
-            // Calculate translation based on 100% of the tabContentWrapper's width per tab
-            tabContentWrapper.style.transform = `translateX(-${activeTabIndex * (100 / tabs.length)}%)`;
+            // Calculate translation based on 100vw units
+            tabContentWrapper.style.transform = `translateX(-${activeTabIndex * 100}vw)`;
             const activeContentDiv = document.getElementById(`tab-content-${activeTabId}`);
             if (activeContentDiv) {
                 // Adjust wrapper height to active tab content height
@@ -680,8 +693,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = itemData.checked;
-        // Adjusted mr-2 to mr-3 for more spacing
-        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer mr-3';
+        // Adjusted mr-3 to mr-4 for more spacing
+        checkbox.className = 'form-checkbox h-6 w-6 text-blue-600 rounded-full border-gray-300 focus:ring-blue-500 transition-colors duration-200 cursor-pointer mr-4';
         checkbox.onchange = () => toggleCheck(itemData.id);
 
         // 入力フィールド (input)
@@ -742,8 +755,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // カラーアイコン (クリックでパレットを表示)
         const colorIcon = document.createElement('div');
-        // Adjusted ml-2 to ml-3 for more spacing
-        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 ml-3';
+        // Adjusted ml-3 to ml-4 for more spacing
+        colorIcon.className = 'w-6 h-6 rounded-full border border-gray-300 cursor-pointer flex-shrink-0 ml-4';
         colorIcon.style.backgroundColor = itemData.itemColor || duskyColors['オフホワイト']; // duskyColorsを使用
         // パレットアイコンを削除し、カラー自体を表示
         colorIcon.onclick = (e) => {
@@ -753,8 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 削除ボタン (button)
         const deleteButton = document.createElement('button');
-        // Adjusted ml-3 to ml-2 for more compact spacing at the end
-        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full ml-2';
+        // Adjusted ml-2 to ml-3 for more compact spacing at the end
+        deleteButton.className = 'p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full ml-3';
         deleteButton.innerHTML = '<i class="fas fa-trash-alt text-lg"></i>';
         deleteButton.onclick = () => deleteInputArea(itemData.id);
 
@@ -1197,14 +1210,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isDragging) {
             e.preventDefault(); // Continue preventing default if identified as horizontal swipe
-            let targetPercentage = currentTranslateX + (diffX / window.innerWidth) * 100;
+            // Calculate target percentage based on 100vw units
+            let targetVW = (currentTranslateX / 100 * window.innerWidth) + diffX; // Convert current % to px, add diffX
+            let targetPercentage = (targetVW / window.innerWidth) * 100; // Convert back to % relative to viewport
 
-            // Calculate boundaries for the translation based on number of tabs
-            const maxAllowedX = 0; // The first tab is at 0% translation
-            const minAllowedX = -(tabs.length - 1) * (100 / tabs.length); // The last tab's leftmost position
+            // Calculate boundaries for the translation based on 100vw units
+            const maxAllowedVW = 0; // The first tab is at 0px translation
+            const minAllowedVW = -(tabs.length - 1) * window.innerWidth; // The last tab's leftmost position in px
 
-            // Clamp the targetPercentage within the allowed boundaries
-            targetPercentage = Math.max(minAllowedX, Math.min(targetPercentage, maxAllowedX));
+            // Clamp the targetVW within the allowed boundaries
+            targetVW = Math.max(minAllowedVW, Math.min(targetVW, maxAllowedVW));
+            targetPercentage = (targetVW / window.innerWidth) * 100;
+
 
             tabContentWrapper.style.transform = `translateX(${targetPercentage}%)`;
         }
@@ -1217,18 +1234,19 @@ document.addEventListener('DOMContentLoaded', () => {
         swipeDirectionDetermined = false; // Reset for next touch event
         tabContentWrapper.style.transition = 'transform 0.3s ease-in-out'; // Re-enable transition for snap back
 
-        const endX = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
+        const endXPercentage = parseFloat(tabContentWrapper.style.transform.replace('translateX(', '').replace('%)', '')) || 0;
         const swipeThresholdPercentage = 15; // Percentage of element width for a successful swipe
 
         const activeTabIndex = tabs.findIndex(tab => tab.id === activeTabId);
         let newActiveTabIndex = activeTabIndex;
 
-        const currentTabStartPercentage = -(activeTabIndex * (100 / tabs.length));
+        // Calculate the starting percentage for the current active tab
+        const currentTabStartPercentage = -(activeTabIndex * 100);
 
         // Determine swipe direction based on how far the swipe moved from the current tab's position
-        if (endX < currentTabStartPercentage - swipeThresholdPercentage) { // Swiped left significantly
+        if (endXPercentage < currentTabStartPercentage - swipeThresholdPercentage) { // Swiped left significantly
             newActiveTabIndex++;
-        } else if (endX > currentTabStartPercentage + swipeThresholdPercentage) { // Swiped right significantly
+        } else if (endXPercentage > currentTabStartPercentage + swipeThresholdPercentage) { // Swiped right significantly
             newActiveTabIndex--;
         }
 
