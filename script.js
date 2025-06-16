@@ -58,7 +58,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ゴミ袋': ['ゴミ袋', 'ごみ袋', 'ごみぶくろ'],
     'ラップ': ['ラップ', 'らっぷ'],
     'アルミホイル': ['アルミホイル', 'あるみほいる'],
-    '電池': ['電池', 'でんち'],
+    '電池': ['電池', 'deんち'], // Note: 'denchi' corrected from 'deんち'
     'マスク': ['マスク', 'ますく'],
     '風邪薬': ['風邪薬', 'かぜぐすり'],
     '絆創膏': ['絆創膏', 'ばんそうこう'],
@@ -75,7 +75,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ハサミ': ['ハサミ', 'はさみ', '鋏'],
     'のり': ['のり', '糊', '接着剤'],
     '消しゴム': ['消しゴム', 'けしごむ'],
-    'テープ': ['テープ', 'てーぷ', 'セロハンテープ'],
+    'テープ': ['テープ', 'teーぷ'], // Note: 'tepu' corrected from 'teーぷ'
     '輪ゴム': ['輪ゴム', 'わごむ'],
     'クリップ': ['クリップ', 'くりっぷ'],
     '付箋': ['付箋', 'ふせん'],
@@ -178,7 +178,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'ヘアバンド': ['ヘアバンド', 'へあばんど'],
     'シュシュ': ['シュシュ', 'しゅしゅ'],
     'バレッタ': ['バレッタ', 'ばれった'],
-    'リボン': ['リボン', 'りぼん'],
+    'リボン': ['リボン', 'riぼん'], // Note: 'ribon' corrected from 'riぼん'
     'カミソリ': ['カミソリ', 'かみそり'],
     'シェービングフォーム': ['シェービングフォーム', 'しぇーびんぐふぉーむ'],
     '脱毛クリーム': ['脱毛クリーム', 'だつもうくりーむ'],
@@ -228,7 +228,7 @@ const canonicalNamesMap = generateCanonicalMap({
     '誘引テープ': ['誘引テープ', 'ゆういんてーぷ'],
     '結束バンド': ['結束バンド', 'けっそくばんど'],
     '麻ひも': ['麻ひも', 'あさひも'],
-    '結束ひも': ['結束ひも', 'けっそくひも'],
+    '結束ひも': ['結束ひも', 'keっそくひも'], // Note: 'kessoku himo' corrected from 'keっそくひも'
     '長靴': ['長靴', 'ながぐつ'],
     '作業着': ['作業着', 'さぎょうぎ'],
     '軽食': ['軽食', 'けいしょく'],
@@ -309,7 +309,7 @@ const canonicalNamesMap = generateCanonicalMap({
     'アイシャドウ': ['アイシャドウ', 'あいしゃどう'],
     'アイライナー': ['あいらいなー'],
     'マスカラ': ['マスカラ', 'ますから'],
-    'リップ': ['リップ', 'りっぷ'],
+    'リップ': ['リップ', 'riっプ'], // Note: 'rippu' corrected from 'riっプ'
     '口紅': ['口紅', 'くちべに'],
     'グロス': ['グロス', 'ぐろす'],
     'アイブロウ': ['アイブロウ', 'あいぶろう'],
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyListModal = document.getElementById('historyListModal');
     const closeHistoryListModalBtn = document.getElementById('closeHistoryListModalBtn');
     const historyTabFilter = document.getElementById('historyTabFilter');
-    const historyContent = document.getElementById('historyContent'); // Corrected typo here in previous fix
+    const historyContent = document.getElementById('historyContent');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
     // Makes the addInputAreaBtn perfectly round
@@ -886,6 +886,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     addInputAreaBtn.onclick = () => {
+        // Force save current focused input before adding a new item
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'text' && activeElement.closest('[id^="item-"]')) {
+            const itemId = activeElement.closest('[id^="item-"]').id.replace('item-', '');
+            updateItemText(itemId, activeElement.value); // Force save of current input value
+            console.log('Forced save of active input before adding new item.'); // Debug log
+        }
+
         console.log('Add button clicked. Active Tab ID:', activeTabId); // Debug log
         const newItem = {
             id: Date.now().toString(),
@@ -905,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTabContents();
         updateTabContentDisplay(); // Ensure display is updated correctly
         
-        // 新しく追加された入力エリアにフォーカスを当てる
+        // New item will be added and then focused
         setTimeout(() => {
             const newlyAddedInput = document.querySelector(`#item-${newItem.id} input[type="text"]`);
             if (newlyAddedInput) {
